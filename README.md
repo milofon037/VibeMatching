@@ -43,12 +43,27 @@ Start infra + backend API together:
 docker compose up -d --build
 ```
 
+Start backend + bot together:
+
+```bash
+docker compose up -d --build backend bot
+```
+
 Published host ports:
 - `backend`: `8000`
 - `postgres`: `5433` (mapped to container `5432`)
 - `redis`: `6379`
 - `rabbitmq`: `5672` (AMQP), `15672` (UI)
 - `minio`: `9000` (S3 API), `9001` (console)
+
+Telegram bot service uses long polling and does not publish host ports.
+Set `TELEGRAM_BOT_TOKEN` in `.env` before starting `bot`.
+
+Run bot smoke test (happy path against backend API):
+
+```bash
+poetry run python -m bot.smoke_test
+```
 
 Stop services:
 
