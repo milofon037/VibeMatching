@@ -2,6 +2,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from app.core.config import settings
 from app.core.errors import APIError
 from app.models.enums import SearchCityMode
 from app.repositories.profiles_repository import ProfilesRepository
@@ -82,3 +83,29 @@ class ProfilesService:
         updated = await self.profiles_repository.update_search_mode(profile, search_city_mode=search_city_mode)
         await self.session.commit()
         return updated
+
+    async def get_feed(self, telegram_id: int, limit: int | None = None):
+        user = await self._get_user_by_telegram_id(telegram_id)
+        my_profile = await self.profiles_repository.get_by_user_id(user.id)
+        if not my_profile:
+            raise APIError(
+                code="profile_not_found",
+                message="Profile is not created yet.",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        batch_limit = settings.feed_batch_size if limit is None else limit
+        if batch_limit <= 0:
+            raise APIError(
+                code="feed_limit_invalid",
+                message="Feed limit must be a positive integer.",
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            )
+        if batch_limit > settings.feed_batch_size:
+            batch_limit = settings.feed_batch_size
+
+        return await self.profiles_repository.get_feed_profiles(
+            requester_profile=my_profile,
+            from_user_id=user.id,
+            limit=batch_limit,
+        )

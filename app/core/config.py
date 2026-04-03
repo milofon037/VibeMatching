@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     minio_secret_key: str = Field(alias="MINIO_SECRET_KEY")
     minio_bucket: str = Field(alias="MINIO_BUCKET")
     minio_secure: bool = Field(alias="MINIO_SECURE")
+    photo_max_per_profile: int = Field(alias="PHOTO_MAX_PER_PROFILE")
+    photo_max_file_size_bytes: int = Field(alias="PHOTO_MAX_FILE_SIZE_BYTES")
+    photo_allowed_content_types_raw: str = Field(alias="PHOTO_ALLOWED_CONTENT_TYPES")
+    photo_allowed_extensions_raw: str = Field(alias="PHOTO_ALLOWED_EXTENSIONS")
+    feed_batch_size: int = Field(alias="FEED_BATCH_SIZE")
 
     @property
     def database_url(self) -> str:
@@ -54,6 +59,14 @@ class Settings(BaseSettings):
             f"amqp://{self.rabbitmq_user}:{self.rabbitmq_password}@"
             f"{self.rabbitmq_host}:{self.rabbitmq_port}/"
         )
+
+    @property
+    def photo_allowed_content_types(self) -> list[str]:
+        return [item.strip() for item in self.photo_allowed_content_types_raw.split(",") if item.strip()]
+
+    @property
+    def photo_allowed_extensions(self) -> list[str]:
+        return [item.strip().lower() for item in self.photo_allowed_extensions_raw.split(",") if item.strip()]
 
 
 settings = Settings()

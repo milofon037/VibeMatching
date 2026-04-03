@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import resolve_telegram_id
@@ -81,3 +81,18 @@ async def update_search_mode(
         search_city_mode=payload.search_city_mode,
     )
     return ProfileResponse.model_validate(profile)
+
+
+@router.get("/feed", response_model=list[ProfileResponse])
+async def get_feed(
+    telegram_id: Annotated[int, Depends(resolve_telegram_id)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    limit: int | None = Query(default=None, ge=1),
+) -> list[ProfileResponse]:
+    service = ProfilesService(
+        profiles_repository=ProfilesRepository(session=session),
+        users_repository=UsersRepository(session=session),
+        session=session,
+    )
+    profiles = await service.get_feed(telegram_id=telegram_id, limit=limit)
+    return [ProfileResponse.model_validate(profile) for profile in profiles]
