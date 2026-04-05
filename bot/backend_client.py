@@ -47,6 +47,15 @@ class BackendClient:
             )
             return response.status_code, response.json()
 
+    async def update_search_mode(self, telegram_id: int, search_city_mode: str) -> tuple[int, dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.patch(
+                f"{self.base_url}/profiles/search-mode",
+                headers=self._headers(telegram_id),
+                json={"search_city_mode": search_city_mode},
+            )
+            return response.status_code, response.json()
+
     async def feed(self, telegram_id: int, limit: int = 1) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.get(
@@ -98,4 +107,27 @@ class BackendClient:
                 headers=self._headers(telegram_id),
                 files={"file": (filename, BytesIO(payload), "image/jpeg")},
             )
+            return response.status_code, response.json()
+
+    async def outgoing_likes(self, telegram_id: int, limit: int = 20) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                f"{self.base_url}/swipe/likes/outgoing",
+                headers=self._headers(telegram_id),
+                params={"limit": limit},
+            )
+            return response.status_code, response.json()
+
+    async def incoming_likes(self, telegram_id: int, limit: int = 20) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(
+                f"{self.base_url}/swipe/likes/incoming",
+                headers=self._headers(telegram_id),
+                params={"limit": limit},
+            )
+            return response.status_code, response.json()
+
+    async def get_profile_photos(self, profile_id: int) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(f"{self.base_url}/photos/{profile_id}")
             return response.status_code, response.json()
