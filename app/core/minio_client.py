@@ -43,3 +43,24 @@ class MinioStorage:
         except S3Error:
             # If object is already missing, DB cleanup should still proceed.
             return
+
+    def get_object_bytes_by_url(self, object_url: str) -> tuple[bytes, str | None] | None:
+        prefix = f"s3://{self.bucket}/"
+        if not object_url.startswith(prefix):
+            return None
+
+        object_name = object_url.removeprefix(prefix)
+        if not object_name:
+            return None
+
+        try:
+            response = self.client.get_object(self.bucket, object_name)
+            try:
+                payload = response.read()
+                content_type = response.headers.get("Content-Type")
+                return payload, content_type
+            finally:
+                response.close()
+                response.release_conn()
+        except S3Error:
+            return None

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import resolve_telegram_id
@@ -9,6 +9,7 @@ from app.repositories.profiles_repository import ProfilesRepository
 from app.repositories.swipes_repository import SwipesRepository
 from app.repositories.matches_repository import MatchesRepository
 from app.repositories.users_repository import UsersRepository
+from app.schemas.profiles import ProfileResponse
 from app.schemas.swipes import SwipeRequest, SwipeResponse
 from app.services.events_service import LikeEventHandler
 from app.services.matches_service import MatchesService
@@ -59,3 +60,47 @@ async def skip_profile(
     )
     swipe = await service.skip(telegram_id=telegram_id, to_profile_id=payload.to_profile_id)
     return SwipeResponse.model_validate(swipe)
+
+
+@router.get("/likes/outgoing", response_model=list[ProfileResponse])
+async def get_outgoing_likes(
+    telegram_id: Annotated[int, Depends(resolve_telegram_id)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    limit: int = Query(default=20, ge=1, le=100),
+) -> list[ProfileResponse]:
+    service = SwipesService(
+        swipes_repository=SwipesRepository(session=session),
+        profiles_repository=ProfilesRepository(session=session),
+        users_repository=UsersRepository(session=session),
+        like_event_handler=LikeEventHandler(),
+        matches_service=MatchesService(
+            matches_repository=MatchesRepository(session=session),
+            users_repository=UsersRepository(session=session),
+            session=session,
+        ),
+        session=session,
+    )
+    profiles = await service.get_profiles_liked_by_user(telegram_id=telegram_id, limit=limit)
+    return [ProfileResponse.model_validate(profile) for profile in profiles]
+
+
+@router.get("/likes/incoming", response_model=list[ProfileResponse])
+async def get_incoming_likes(
+    telegram_id: Annotated[int, Depends(resolve_telegram_id)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    limit: int = Query(default=20, ge=1, le=100),
+) -> list[ProfileResponse]:
+    service = SwipesService(
+        swipes_repository=SwipesRepository(session=session),
+        profiles_repository=ProfilesRepository(session=session),
+        users_repository=UsersRepository(session=session),
+        like_event_handler=LikeEventHandler(),
+        matches_service=MatchesService(
+            matches_repository=MatchesRepository(session=session),
+            users_repository=UsersRepository(session=session),
+            session=session,
+        ),
+        session=session,
+    )
+    profiles = await service.get_profiles_who_liked_user(telegram_id=telegram_id, limit=limit)
+    return [ProfileResponse.model_validate(profile) for profile in profiles]

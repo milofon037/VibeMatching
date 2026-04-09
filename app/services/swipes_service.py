@@ -96,3 +96,11 @@ class SwipesService:
 
     async def skip(self, telegram_id: int, to_profile_id: int):
         return await self._create_swipe(telegram_id=telegram_id, to_profile_id=to_profile_id, action=SwipeAction.SKIP)
+
+    async def get_profiles_liked_by_user(self, telegram_id: int, limit: int):
+        user = await self._get_user_by_telegram_id(telegram_id)
+        return await self.swipes_repository.get_liked_profiles_by_user(from_user_id=user.id, limit=limit)
+
+    async def get_profiles_who_liked_user(self, telegram_id: int, limit: int):
+        user = await self._get_user_by_telegram_id(telegram_id)
+        return await self.swipes_repository.get_profiles_who_liked_user(to_user_id=user.id, limit=limit)
