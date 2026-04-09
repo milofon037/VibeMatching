@@ -49,6 +49,7 @@ class PhotosService:
 
     async def upload_photo(self, telegram_id: int, file: UploadFile, requested_position: int | None):
         _, profile = await self._get_user_profile(telegram_id)
+        _ = requested_position
 
         if file.content_type not in settings.photo_allowed_content_types:
             raise APIError(
@@ -80,35 +81,37 @@ class PhotosService:
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             )
 
-        photos_count = await self.photos_repository.count_by_profile_id(profile.id)
-        if photos_count >= settings.photo_max_per_profile:
-            raise APIError(
-                code="photo_limit_reached",
-                message=f"Max photos per profile: {settings.photo_max_per_profile}.",
-                status_code=status.HTTP_409_CONFLICT,
-            )
-
-        position = requested_position
-        if position is None:
-            position = await self.photos_repository.get_next_position(profile.id)
-
         object_name = f"profile_{profile.id}/{uuid4().hex}{file_extension}"
         photo_url = self.storage.upload_bytes(object_name=object_name, payload=payload, content_type=file.content_type)
+        existing_photos = await self.photos_repository.get_by_profile_id(profile.id)
 
         try:
-            photo = await self.photos_repository.create_photo(profile_id=profile.id, photo_url=photo_url, position=position)
+            for existing_photo in existing_photos:
+                self.storage.remove_object_by_url(existing_photo.photo_url)
+                await self.photos_repository.delete_photo(existing_photo)
+
+            photo = await self.photos_repository.create_photo(profile_id=profile.id, photo_url=photo_url, position=1)
             await self.session.commit()
             return photo
         except IntegrityError:
             await self.session.rollback()
+            self.storage.remove_object_by_url(photo_url)
             raise APIError(
-                code="photo_position_conflict",
-                message="Photo position is already used for this profile.",
+                code="photo_update_conflict",
+                message="Could not update profile photo.",
                 status_code=status.HTTP_409_CONFLICT,
             )
 
     async def get_profile_photos(self, profile_id: int):
         return await self.photos_repository.get_by_profile_id(profile_id)
+
+    async def get_primary_photo_bytes(self, profile_id: int) -> tuple[bytes, str | None] | None:
+        photos = await self.photos_repository.get_by_profile_id(profile_id)
+        if not photos:
+            return None
+
+        primary_photo = sorted(photos, key=lambda photo: photo.position)[0]
+        return self.storage.get_object_bytes_by_url(primary_photo.photo_url)
 
     async def delete_photo(self, telegram_id: int, photo_id: int):
         _, profile = await self._get_user_profile(telegram_id)
