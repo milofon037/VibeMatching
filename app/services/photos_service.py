@@ -105,6 +105,20 @@ class PhotosService:
     async def get_profile_photos(self, profile_id: int):
         return await self.photos_repository.get_by_profile_id(profile_id)
 
+    async def get_my_photos(self, telegram_id: int):
+        _, profile = await self._get_user_profile(telegram_id)
+        return await self.photos_repository.get_by_profile_id(profile.id)
+
+    async def get_photo_by_id(self, photo_id: int):
+        photo = await self.photos_repository.get_by_id(photo_id)
+        if not photo:
+            raise APIError(
+                code="photo_not_found",
+                message="Photo not found.",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+        return photo
+
     async def get_primary_photo_bytes(self, profile_id: int) -> tuple[bytes, str | None] | None:
         photos = await self.photos_repository.get_by_profile_id(profile_id)
         if not photos:
@@ -133,3 +147,29 @@ class PhotosService:
         self.storage.remove_object_by_url(photo.photo_url)
         await self.photos_repository.delete_photo(photo)
         await self.session.commit()
+
+    async def set_main_photo(self, telegram_id: int, photo_id: int):
+        _, profile = await self._get_user_profile(telegram_id)
+
+        photo = await self.photos_repository.get_by_id(photo_id)
+        if not photo:
+            raise APIError(
+                code="photo_not_found",
+                message="Photo not found.",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        if photo.profile_id != profile.id:
+            raise APIError(
+                code="photo_forbidden",
+                message="You can modify only your own photos.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        photos = await self.photos_repository.get_by_profile_id(profile.id)
+        for profile_photo in photos:
+            profile_photo.position = 1 if profile_photo.id == photo.id else 2
+
+        await self.session.commit()
+        await self.session.refresh(photo)
+        return photo

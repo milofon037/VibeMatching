@@ -34,9 +34,9 @@ async def upload_photo(
     return PhotoUploadResponse(photo=PhotoResponse.model_validate(photo))
 
 
-@router.get("/{profile_id}", response_model=list[PhotoResponse])
-async def get_profile_photos(
-    profile_id: int,
+@router.get("/my", response_model=list[PhotoResponse])
+async def get_my_photos(
+    telegram_id: Annotated[int, Depends(resolve_telegram_id)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> list[PhotoResponse]:
     service = PhotosService(
@@ -46,15 +46,15 @@ async def get_profile_photos(
         storage=MinioStorage(),
         session=session,
     )
-    photos = await service.get_profile_photos(profile_id=profile_id)
+    photos = await service.get_my_photos(telegram_id=telegram_id)
     return [PhotoResponse.model_validate(photo) for photo in photos]
 
 
-@router.get("/{profile_id}/primary/raw")
-async def get_primary_profile_photo_raw(
-    profile_id: int,
+@router.get("/{photo_id}", response_model=PhotoResponse)
+async def get_photo(
+    photo_id: int,
     session: Annotated[AsyncSession, Depends(get_db_session)],
-) -> Response:
+) -> PhotoResponse:
     service = PhotosService(
         photos_repository=PhotosRepository(session=session),
         profiles_repository=ProfilesRepository(session=session),
@@ -62,12 +62,25 @@ async def get_primary_profile_photo_raw(
         storage=MinioStorage(),
         session=session,
     )
-    result = await service.get_primary_photo_bytes(profile_id=profile_id)
-    if not result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Primary photo not found")
+    photo = await service.get_photo_by_id(photo_id=photo_id)
+    return PhotoResponse.model_validate(photo)
 
-    payload, content_type = result
-    return Response(content=payload, media_type=content_type or "application/octet-stream")
+
+@router.post("/{photo_id}/set-main", response_model=PhotoResponse)
+async def set_main_photo(
+    photo_id: int,
+    telegram_id: Annotated[int, Depends(resolve_telegram_id)],
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> PhotoResponse:
+    service = PhotosService(
+        photos_repository=PhotosRepository(session=session),
+        profiles_repository=ProfilesRepository(session=session),
+        users_repository=UsersRepository(session=session),
+        storage=MinioStorage(),
+        session=session,
+    )
+    photo = await service.set_main_photo(telegram_id=telegram_id, photo_id=photo_id)
+    return PhotoResponse.model_validate(photo)
 
 
 @router.delete("/{photo_id}", response_model=PhotoDeleteResponse)

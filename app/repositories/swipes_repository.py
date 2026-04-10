@@ -69,3 +69,13 @@ class SwipesRepository:
         )
         result = await self.session.execute(query)
         return list(result.scalars().all())
+
+    async def list_for_user(self, from_user_id: int, limit: int) -> list[Swipe]:
+        query = (
+            select(Swipe)
+            .where(Swipe.from_user_id == from_user_id)
+            .order_by(desc(Swipe.created_at), desc(Swipe.id))
+            .limit(limit)
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())

@@ -1,0 +1,75 @@
+name: Bot CI
+
+on:
+  push:
+    branches: [ main, dev, develop ]
+    paths:
+      - 'bot/**'
+      - 'tests/bot/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - '.github/workflows/ci-bot.yml'
+  pull_request:
+    branches: [ main, dev, develop ]
+    paths:
+      - 'bot/**'
+      - 'tests/bot/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - '.github/workflows/ci-bot.yml'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Bot Lint
+    defaults:
+      run:
+        working-directory: .
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install poetry
+          poetry install
+      
+      - name: Lint with ruff
+        run: poetry run ruff check bot tests/bot
+
+  tests:
+    runs-on: ubuntu-latest
+    name: Bot Tests
+    needs: lint
+    defaults:
+      run:
+        working-directory: .
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install poetry
+          poetry install
+      
+      - name: Run bot tests
+        run: poetry run pytest tests/bot -v --cov=bot --cov-report=xml
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false

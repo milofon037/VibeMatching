@@ -15,12 +15,12 @@ from app.services.events_service import LikeEventHandler
 from app.services.matches_service import MatchesService
 from app.services.swipes_service import SwipesService
 
-router = APIRouter(prefix="/swipe", tags=["swipe"])
+router = APIRouter(prefix="/swipes", tags=["swipes"])
 
 
-@router.post("/like", response_model=SwipeResponse)
+@router.post("/like/{profile_id}", response_model=SwipeResponse)
 async def like_profile(
-    payload: SwipeRequest,
+    profile_id: int,
     telegram_id: Annotated[int, Depends(resolve_telegram_id)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> SwipeResponse:
@@ -36,13 +36,13 @@ async def like_profile(
         ),
         session=session,
     )
-    swipe = await service.like(telegram_id=telegram_id, to_profile_id=payload.to_profile_id)
+    swipe = await service.like(telegram_id=telegram_id, to_profile_id=profile_id)
     return SwipeResponse.model_validate(swipe)
 
 
-@router.post("/skip", response_model=SwipeResponse)
+@router.post("/skip/{profile_id}", response_model=SwipeResponse)
 async def skip_profile(
-    payload: SwipeRequest,
+    profile_id: int,
     telegram_id: Annotated[int, Depends(resolve_telegram_id)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> SwipeResponse:
@@ -58,16 +58,16 @@ async def skip_profile(
         ),
         session=session,
     )
-    swipe = await service.skip(telegram_id=telegram_id, to_profile_id=payload.to_profile_id)
+    swipe = await service.skip(telegram_id=telegram_id, to_profile_id=profile_id)
     return SwipeResponse.model_validate(swipe)
 
 
-@router.get("/likes/outgoing", response_model=list[ProfileResponse])
-async def get_outgoing_likes(
+@router.get("/history", response_model=list[SwipeResponse])
+async def get_swipes_history(
     telegram_id: Annotated[int, Depends(resolve_telegram_id)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
     limit: int = Query(default=20, ge=1, le=100),
-) -> list[ProfileResponse]:
+) -> list[SwipeResponse]:
     service = SwipesService(
         swipes_repository=SwipesRepository(session=session),
         profiles_repository=ProfilesRepository(session=session),
@@ -80,27 +80,5 @@ async def get_outgoing_likes(
         ),
         session=session,
     )
-    profiles = await service.get_profiles_liked_by_user(telegram_id=telegram_id, limit=limit)
-    return [ProfileResponse.model_validate(profile) for profile in profiles]
-
-
-@router.get("/likes/incoming", response_model=list[ProfileResponse])
-async def get_incoming_likes(
-    telegram_id: Annotated[int, Depends(resolve_telegram_id)],
-    session: Annotated[AsyncSession, Depends(get_db_session)],
-    limit: int = Query(default=20, ge=1, le=100),
-) -> list[ProfileResponse]:
-    service = SwipesService(
-        swipes_repository=SwipesRepository(session=session),
-        profiles_repository=ProfilesRepository(session=session),
-        users_repository=UsersRepository(session=session),
-        like_event_handler=LikeEventHandler(),
-        matches_service=MatchesService(
-            matches_repository=MatchesRepository(session=session),
-            users_repository=UsersRepository(session=session),
-            session=session,
-        ),
-        session=session,
-    )
-    profiles = await service.get_profiles_who_liked_user(telegram_id=telegram_id, limit=limit)
-    return [ProfileResponse.model_validate(profile) for profile in profiles]
+    swipes = await service.get_history(telegram_id=telegram_id, limit=limit)
+    return [SwipeResponse.model_validate(swipe) for swipe in swipes]
