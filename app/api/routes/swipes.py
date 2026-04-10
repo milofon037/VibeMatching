@@ -5,12 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import resolve_telegram_id
 from app.core.database import get_db_session
+from app.repositories.matches_repository import MatchesRepository
 from app.repositories.profiles_repository import ProfilesRepository
 from app.repositories.swipes_repository import SwipesRepository
-from app.repositories.matches_repository import MatchesRepository
 from app.repositories.users_repository import UsersRepository
-from app.schemas.profiles import ProfileResponse
-from app.schemas.swipes import SwipeRequest, SwipeResponse
+from app.schemas.swipes import SwipeResponse
 from app.services.events_service import LikeEventHandler
 from app.services.matches_service import MatchesService
 from app.services.swipes_service import SwipesService

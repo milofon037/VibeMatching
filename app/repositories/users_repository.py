@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,7 +23,7 @@ class UsersRepository:
         return user
 
     async def update_last_active(self, user: User) -> User:
-        user.last_active_at = datetime.now(tz=timezone.utc)
+        user.last_active_at = datetime.now(tz=UTC)
         await self.session.flush()
         await self.session.refresh(user)
         return user

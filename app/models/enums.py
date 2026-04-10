@@ -11,7 +11,7 @@ class Gender(StrEnum):
     MALE = "male"
     FEMALE = "female"
     OTHER = "other"
-    
+
     # Support short notation
     @classmethod
     def _missing_(cls, value):

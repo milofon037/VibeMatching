@@ -1,12 +1,13 @@
 """Unit tests for SwipesService."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.services.swipes_service import SwipesService
 from app.core.errors import APIError
 from app.models.enums import SwipeAction
+from app.services.swipes_service import SwipesService
 
 
 @pytest.mark.unit

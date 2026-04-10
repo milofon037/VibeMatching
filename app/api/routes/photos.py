@@ -1,8 +1,7 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette import status
 
 from app.api.dependencies.auth import resolve_telegram_id
 from app.core.database import get_db_session
@@ -20,8 +19,8 @@ router = APIRouter(prefix="/photos", tags=["photos"])
 async def upload_photo(
     telegram_id: Annotated[int, Depends(resolve_telegram_id)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    file: UploadFile = File(...),
-    position: int | None = Form(default=None),
+    file: Annotated[UploadFile, File(...)],
+    position: Annotated[int | None, Form()] = None,
 ) -> PhotoUploadResponse:
     service = PhotosService(
         photos_repository=PhotosRepository(session=session),

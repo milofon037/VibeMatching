@@ -1,6 +1,6 @@
 from sqlalchemy import desc, select
-from sqlalchemy.orm import aliased
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.models.enums import SwipeAction
 from app.models.profile import Profile

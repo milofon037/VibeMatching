@@ -1,11 +1,12 @@
 """Unit tests for MatchesService."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.services.matches_service import MatchesService
 from app.core.errors import APIError
+from app.services.matches_service import MatchesService
 
 
 @pytest.mark.unit

@@ -4,7 +4,6 @@ import pytest
 from httpx import AsyncClient
 
 from app.models.user import User
-from app.schemas.users import UserResponse
 
 
 @pytest.mark.integration

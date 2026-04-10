@@ -1,11 +1,12 @@
 """Unit tests for UsersService."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.services.users_service import UsersService
 from app.core.errors import APIError
+from app.services.users_service import UsersService
 
 
 @pytest.mark.unit
@@ -144,7 +145,7 @@ class TestUsersService:
         telegram_id = 123456789
         existing_user = MagicMock(id=1, telegram_id=telegram_id)
         updated_user = MagicMock(id=1, telegram_id=telegram_id, last_active_at="2026-04-10T10:00:00")
-        
+
         mock_repository.get_by_telegram_id.return_value = existing_user
         mock_repository.update_last_active.return_value = updated_user
 

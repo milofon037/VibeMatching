@@ -1,12 +1,12 @@
 """Unit tests for ProfilesService."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from sqlalchemy.exc import IntegrityError
 
-from app.services.profiles_service import ProfilesService
+import pytest
+
 from app.core.errors import APIError
 from app.models.enums import SearchCityMode
+from app.services.profiles_service import ProfilesService
 
 
 @pytest.mark.unit

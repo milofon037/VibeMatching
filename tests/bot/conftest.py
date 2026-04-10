@@ -1,10 +1,10 @@
 """Bot test fixtures and configuration."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from aiogram import Bot
-from aiogram.types import Chat, Message, User, Update
+from aiogram.types import Chat, Message, Update, User
 
 from bot.services.api_client import BackendClient
 

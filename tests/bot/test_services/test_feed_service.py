@@ -1,7 +1,7 @@
 """Tests for bot feed service."""
 
+
 import pytest
-from unittest.mock import AsyncMock
 
 from bot.services.feed_service import feed_service
 

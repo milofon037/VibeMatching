@@ -1,11 +1,11 @@
 """Unit tests for PhotosService."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from sqlalchemy.exc import IntegrityError
 
-from app.services.photos_service import PhotosService
+import pytest
+
 from app.core.errors import APIError
+from app.services.photos_service import PhotosService
 
 
 @pytest.mark.unit

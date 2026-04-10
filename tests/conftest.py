@@ -5,18 +5,17 @@ Contains fixtures for database, HTTP client, and settings
 used across unit and integration tests.
 """
 
+from collections.abc import AsyncGenerator
+
 import pytest
 import pytest_asyncio
-from typing import AsyncGenerator
-
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy.pool import StaticPool
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
-from app.main import app
-from app.core.database import get_db_session, Base
 from app.core.config import settings
-
+from app.core.database import Base, get_db_session
+from app.main import app
 
 # Use in-memory SQLite for faster unit tests
 # For integration tests with PostgreSQL, set TEST_DATABASE_URL env var

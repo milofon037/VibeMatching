@@ -93,14 +93,14 @@ class PhotosService:
             photo = await self.photos_repository.create_photo(profile_id=profile.id, photo_url=photo_url, position=1)
             await self.session.commit()
             return photo
-        except IntegrityError:
+        except IntegrityError as err:
             await self.session.rollback()
             self.storage.remove_object_by_url(photo_url)
             raise APIError(
                 code="photo_update_conflict",
                 message="Could not update profile photo.",
                 status_code=status.HTTP_409_CONFLICT,
-            )
+            ) from err
 
     async def get_profile_photos(self, profile_id: int):
         return await self.photos_repository.get_by_profile_id(profile_id)

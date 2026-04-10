@@ -26,7 +26,7 @@ class TestProfilesRoutes:
             "age": 25,
             "gender": "male",
             "city": "Moscow",
-            
+
         }
 
         # Act

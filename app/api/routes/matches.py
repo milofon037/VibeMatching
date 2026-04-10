@@ -7,7 +7,7 @@ from app.api.dependencies.auth import resolve_telegram_id
 from app.core.database import get_db_session
 from app.repositories.matches_repository import MatchesRepository
 from app.repositories.users_repository import UsersRepository
-from app.schemas.matches import MatchDialogStartedRequest, MatchResponse
+from app.schemas.matches import MatchResponse
 from app.services.matches_service import MatchesService
 
 router = APIRouter(prefix="/matches", tags=["matches"])
