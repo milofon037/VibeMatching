@@ -20,7 +20,7 @@ class UsersService:
             created = await self.repository.create_user(telegram_id=telegram_id, referral_code=referral_code)
             await self.session.commit()
             return created
-        except IntegrityError:
+        except IntegrityError as err:
             await self.session.rollback()
             fallback = await self.repository.get_by_telegram_id(telegram_id)
             if fallback:
@@ -29,7 +29,7 @@ class UsersService:
                 code="user_conflict",
                 message="Could not register user because of a conflicting telegram_id.",
                 status_code=status.HTTP_409_CONFLICT,
-            )
+            ) from err
 
     async def get_current_user(self, telegram_id: int):
         user = await self.repository.get_by_telegram_id(telegram_id)

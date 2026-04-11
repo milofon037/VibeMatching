@@ -1,6 +1,6 @@
 from sqlalchemy import desc, select
-from sqlalchemy.orm import aliased
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.models.enums import SwipeAction
 from app.models.profile import Profile
@@ -64,6 +64,16 @@ class SwipesRepository:
                 target_profile.user_id == to_user_id,
                 Swipe.action == SwipeAction.LIKE,
             )
+            .order_by(desc(Swipe.created_at), desc(Swipe.id))
+            .limit(limit)
+        )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def list_for_user(self, from_user_id: int, limit: int) -> list[Swipe]:
+        query = (
+            select(Swipe)
+            .where(Swipe.from_user_id == from_user_id)
             .order_by(desc(Swipe.created_at), desc(Swipe.id))
             .limit(limit)
         )

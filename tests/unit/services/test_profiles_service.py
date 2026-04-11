@@ -1,0 +1,212 @@
+"""Unit tests for ProfilesService."""
+
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
+from app.core.errors import APIError
+from app.models.enums import SearchCityMode
+from app.services.profiles_service import ProfilesService
+
+
+@pytest.mark.unit
+class TestProfilesService:
+    """Tests for ProfilesService business logic."""
+
+    @pytest.fixture
+    def mock_profiles_repository(self):
+        """Create mock ProfilesRepository."""
+        return AsyncMock()
+
+    @pytest.fixture
+    def mock_users_repository(self):
+        """Create mock UsersRepository."""
+        return AsyncMock()
+
+    @pytest.fixture
+    def mock_session(self):
+        """Create mock AsyncSession."""
+        return AsyncMock()
+
+    @pytest.fixture
+    def service(self, mock_profiles_repository, mock_users_repository, mock_session):
+        """Create ProfilesService with mocked dependencies."""
+        return ProfilesService(
+            profiles_repository=mock_profiles_repository,
+            users_repository=mock_users_repository,
+            session=mock_session,
+        )
+
+    @pytest.mark.asyncio
+    async def test_create_profile_success(self, service, mock_users_repository, mock_profiles_repository, mock_session):
+        """Test successful profile creation."""
+        # Arrange
+        telegram_id = 123456789
+        user = MagicMock(id=1, telegram_id=telegram_id)
+        profile_data = {"name": "John", "age": 25, "gender": "M", "city": "Moscow"}
+        profile = MagicMock(id=1, user_id=1, **profile_data)
+
+        mock_users_repository.get_by_telegram_id.return_value = user
+        mock_profiles_repository.get_by_user_id.return_value = None
+        mock_profiles_repository.create_profile.return_value = profile
+
+        # Act
+        result = await service.create_profile(telegram_id, profile_data)
+
+        # Assert
+        assert result.id == 1
+        assert result.user_id == 1
+        mock_profiles_repository.create_profile.assert_called_once_with(user_id=1, **profile_data)
+        mock_session.commit.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_create_profile_user_not_found(self, service, mock_users_repository):
+        """Test creating profile for non-existent user."""
+        # Arrange
+        telegram_id = 999999999
+        profile_data = {"name": "John", "age": 25, "gender": "M"}
+        mock_users_repository.get_by_telegram_id.return_value = None
+
+        # Act & Assert
+        with pytest.raises(APIError) as exc_info:
+            await service.create_profile(telegram_id, profile_data)
+
+        assert exc_info.value.code == "user_not_found"
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_create_profile_already_exists(self, service, mock_users_repository, mock_profiles_repository):
+        """Test that user can only have one active profile."""
+        # Arrange
+        telegram_id = 123456789
+        user = MagicMock(id=1, telegram_id=telegram_id)
+        existing_profile = MagicMock(id=1, user_id=1)
+        profile_data = {"name": "John", "age": 25, "gender": "M"}
+
+        mock_users_repository.get_by_telegram_id.return_value = user
+        mock_profiles_repository.get_by_user_id.return_value = existing_profile
+
+        # Act & Assert
+        with pytest.raises(APIError) as exc_info:
+            await service.create_profile(telegram_id, profile_data)
+
+        assert exc_info.value.code == "profile_already_exists"
+        assert exc_info.value.status_code == 409
+
+    @pytest.mark.asyncio
+    async def test_get_my_profile_success(self, service, mock_users_repository, mock_profiles_repository):
+        """Test getting user's own profile."""
+        # Arrange
+        telegram_id = 123456789
+        user = MagicMock(id=1, telegram_id=telegram_id)
+        profile = MagicMock(id=1, user_id=1)
+        profile.name = "John"  # Set attribute directly
+
+        mock_users_repository.get_by_telegram_id.return_value = user
+        mock_profiles_repository.get_by_user_id.return_value = profile
+
+        # Act
+        result = await service.get_my_profile(telegram_id)
+
+        # Assert
+        assert result.id == 1
+        assert result.name == "John"
+
+    @pytest.mark.asyncio
+    async def test_get_my_profile_not_found(self, service, mock_users_repository, mock_profiles_repository):
+        """Test getting profile when it doesn't exist."""
+        # Arrange
+        telegram_id = 123456789
+        user = MagicMock(id=1, telegram_id=telegram_id)
+
+        mock_users_repository.get_by_telegram_id.return_value = user
+        mock_profiles_repository.get_by_user_id.return_value = None
+
+        # Act & Assert
+        with pytest.raises(APIError) as exc_info:
+            await service.get_my_profile(telegram_id)
+
+        assert exc_info.value.code == "profile_not_found"
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_update_profile_success(self, service, mock_users_repository, mock_profiles_repository, mock_session):
+        """Test updating profile."""
+        # Arrange
+        telegram_id = 123456789
+        user = MagicMock(id=1)
+        old_profile = MagicMock(id=1, user_id=1)
+        updated_profile = MagicMock(id=1, user_id=1)
+        updated_profile.name = "Jane"
+        updated_profile.age = 26
+        profile_data = {"name": "Jane", "age": 26}
+
+        mock_users_repository.get_by_telegram_id.return_value = user
+        mock_profiles_repository.get_by_user_id.return_value = old_profile
+        mock_profiles_repository.update_profile.return_value = updated_profile
+
+        # Act
+        result = await service.update_profile(telegram_id, profile_data)
+
+        # Assert
+        assert result.name == "Jane"
+        assert result.age == 26
+        mock_profiles_repository.update_profile.assert_called_once()
+        mock_session.commit.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_update_search_mode_success(self, service, mock_users_repository, mock_profiles_repository, mock_session):
+        """Test updating search mode."""
+        # Arrange
+        telegram_id = 123456789
+        user = MagicMock(id=1)
+        profile = MagicMock(id=1, user_id=1, search_city_mode=SearchCityMode.LOCAL)
+        updated_profile = MagicMock(id=1, user_id=1, search_city_mode=SearchCityMode.GLOBAL)
+
+        mock_users_repository.get_by_telegram_id.return_value = user
+        mock_profiles_repository.get_by_user_id.return_value = profile
+        mock_profiles_repository.update_search_mode.return_value = updated_profile
+
+        # Act
+        result = await service.update_search_mode(telegram_id, SearchCityMode.GLOBAL)
+
+        # Assert
+        assert result.search_city_mode == SearchCityMode.GLOBAL
+        mock_profiles_repository.update_search_mode.assert_called_once_with(
+            profile,
+            search_city_mode=SearchCityMode.GLOBAL,
+        )
+        mock_session.commit.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_feed_profile_not_created(self, service, mock_users_repository, mock_profiles_repository):
+        """Test that feed requires user to have a profile."""
+        # Arrange
+        telegram_id = 123456789
+        user = MagicMock(id=1)
+
+        mock_users_repository.get_by_telegram_id.return_value = user
+        mock_profiles_repository.get_by_user_id.return_value = None
+
+        # Act & Assert
+        with pytest.raises(APIError) as exc_info:
+            await service.get_feed(telegram_id)
+
+        assert exc_info.value.code == "profile_not_found"
+
+    @pytest.mark.asyncio
+    async def test_get_feed_invalid_limit(self, service, mock_users_repository, mock_profiles_repository):
+        """Test that negative feed limit raises error."""
+        # Arrange
+        telegram_id = 123456789
+        user = MagicMock(id=1)
+        profile = MagicMock(id=1, user_id=1)
+
+        mock_users_repository.get_by_telegram_id.return_value = user
+        mock_profiles_repository.get_by_user_id.return_value = profile
+
+        # Act & Assert
+        with pytest.raises(APIError) as exc_info:
+            await service.get_feed(telegram_id, limit=-1)
+
+        assert exc_info.value.code == "feed_limit_invalid"

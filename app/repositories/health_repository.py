@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 class HealthRepository:
@@ -9,4 +9,4 @@ class HealthRepository:
 
     @staticmethod
     def utc_now_iso() -> str:
-        return datetime.now(tz=timezone.utc).isoformat()
+        return datetime.now(tz=UTC).isoformat()

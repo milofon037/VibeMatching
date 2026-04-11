@@ -71,13 +71,13 @@ class SwipesService:
                 action=action,
             )
             await self.session.commit()
-        except IntegrityError:
+        except IntegrityError as err:
             await self.session.rollback()
             raise APIError(
                 code="swipe_conflict",
                 message="Could not save swipe due to conflicting data.",
                 status_code=status.HTTP_409_CONFLICT,
-            )
+            ) from err
 
         if action == SwipeAction.LIKE:
             reverse_like = await self.swipes_repository.get_like_to_user_profile(
@@ -104,3 +104,7 @@ class SwipesService:
     async def get_profiles_who_liked_user(self, telegram_id: int, limit: int):
         user = await self._get_user_by_telegram_id(telegram_id)
         return await self.swipes_repository.get_profiles_who_liked_user(to_user_id=user.id, limit=limit)
+
+    async def get_history(self, telegram_id: int, limit: int):
+        user = await self._get_user_by_telegram_id(telegram_id)
+        return await self.swipes_repository.list_for_user(from_user_id=user.id, limit=limit)

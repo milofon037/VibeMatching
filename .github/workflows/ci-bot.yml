@@ -1,0 +1,103 @@
+name: Bot CI
+
+on:
+  push:
+    branches: [ main, dev, develop ]
+    paths:
+      - 'bot/**'
+      - 'tests/bot/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - '.github/workflows/ci-bot.yml'
+  pull_request:
+    branches: [ main, dev, develop ]
+    paths:
+      - 'bot/**'
+      - 'tests/bot/**'
+      - 'pyproject.toml'
+      - 'poetry.lock'
+      - '.github/workflows/ci-bot.yml'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Bot Lint
+    defaults:
+      run:
+        working-directory: .
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install poetry
+          poetry install
+      
+      - name: Lint with ruff
+        run: poetry run ruff check bot tests/bot
+
+  tests:
+    runs-on: ubuntu-latest
+    name: Bot Tests
+    needs: lint
+    defaults:
+      run:
+        working-directory: .
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install poetry
+          poetry install
+      
+      - name: Run bot tests
+        run: poetry run pytest tests/bot -v --cov=bot --cov-report=xml
+        env:
+          APP_NAME: VibeMatching API
+          SERVICE_NAME: vibematching-bot
+          HEALTH_STATUS_OK: ok
+          APP_ENV: test
+          DEBUG: "true"
+          API_V1_PREFIX: /api/v1
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5433
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_DB: 0
+          RABBITMQ_HOST: localhost
+          RABBITMQ_PORT: 5672
+          RABBITMQ_USER: guest
+          RABBITMQ_PASSWORD: guest
+          MINIO_ENDPOINT: localhost:9000
+          MINIO_ACCESS_KEY: minioadmin
+          MINIO_SECRET_KEY: minioadmin
+          MINIO_BUCKET: profile-photos
+          MINIO_SECURE: "false"
+          PHOTO_MAX_PER_PROFILE: 5
+          PHOTO_MAX_FILE_SIZE_BYTES: 5242880
+          PHOTO_ALLOWED_CONTENT_TYPES: image/jpeg,image/png,image/webp
+          PHOTO_ALLOWED_EXTENSIONS: .jpg,.jpeg,.png,.webp
+          FEED_BATCH_SIZE: 20
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false

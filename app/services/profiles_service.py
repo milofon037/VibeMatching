@@ -45,13 +45,13 @@ class ProfilesService:
             profile = await self.profiles_repository.create_profile(user_id=user.id, **profile_data)
             await self.session.commit()
             return profile
-        except IntegrityError:
+        except IntegrityError as err:
             await self.session.rollback()
             raise APIError(
                 code="profile_conflict",
                 message="Could not create profile because of conflicting data.",
                 status_code=status.HTTP_409_CONFLICT,
-            )
+            ) from err
 
     async def get_my_profile(self, telegram_id: int):
         user = await self._get_user_by_telegram_id(telegram_id)
@@ -70,13 +70,13 @@ class ProfilesService:
             updated = await self.profiles_repository.update_profile(profile, **profile_data)
             await self.session.commit()
             return updated
-        except IntegrityError:
+        except IntegrityError as err:
             await self.session.rollback()
             raise APIError(
                 code="profile_update_conflict",
                 message="Could not update profile because of conflicting data.",
                 status_code=status.HTTP_409_CONFLICT,
-            )
+            ) from err
 
     async def update_search_mode(self, telegram_id: int, search_city_mode: SearchCityMode):
         profile = await self.get_my_profile(telegram_id)

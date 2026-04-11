@@ -37,7 +37,7 @@ class MatchesService:
             created = await self.matches_repository.create_match(user_a_id, user_b_id)
             await self.session.flush()
             return created
-        except IntegrityError:
+        except IntegrityError as err:
             await self.session.rollback()
             fallback = await self.matches_repository.get_by_pair(user_a_id, user_b_id)
             if fallback:
@@ -46,7 +46,7 @@ class MatchesService:
                 code="match_conflict",
                 message="Could not create match due to conflicting data.",
                 status_code=status.HTTP_409_CONFLICT,
-            )
+            ) from err
 
     async def list_matches(self, telegram_id: int):
         user = await self._get_user_by_telegram_id(telegram_id)
