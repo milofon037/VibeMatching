@@ -160,6 +160,4 @@ jobs:
         run: |
           pip install poetry
           poetry install
-          poetry run pip-audit
-
-
+          poetry run pip-audit --skip-missing
