@@ -58,7 +58,9 @@ class TestMatchesService:
         mock_session.flush.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_ensure_match_already_exists(self, service, mock_matches_repository, mock_session):
+    async def test_ensure_match_already_exists(
+        self, service, mock_matches_repository, mock_session
+    ):
         """Test that existing match is returned without creating new one."""
         # Arrange
         user_a_id = 1
@@ -76,7 +78,9 @@ class TestMatchesService:
         mock_session.flush.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_ensure_match_integrity_error_recovery(self, service, mock_matches_repository, mock_session):
+    async def test_ensure_match_integrity_error_recovery(
+        self, service, mock_matches_repository, mock_session
+    ):
         """Test recovery from integrity error during match creation."""
         # Arrange
         user_a_id = 1
@@ -98,7 +102,9 @@ class TestMatchesService:
         mock_session.rollback.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_list_matches_success(self, service, mock_users_repository, mock_matches_repository):
+    async def test_list_matches_success(
+        self, service, mock_users_repository, mock_matches_repository
+    ):
         """Test listing user's matches."""
         # Arrange
         telegram_id = 123456789
@@ -133,7 +139,9 @@ class TestMatchesService:
         assert exc_info.value.code == "user_not_found"
 
     @pytest.mark.asyncio
-    async def test_list_matches_empty(self, service, mock_users_repository, mock_matches_repository):
+    async def test_list_matches_empty(
+        self, service, mock_users_repository, mock_matches_repository
+    ):
         """Test listing matches when user has no matches."""
         # Arrange
         telegram_id = 123456789

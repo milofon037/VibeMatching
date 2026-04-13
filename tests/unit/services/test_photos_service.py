@@ -56,7 +56,9 @@ class TestPhotosService:
         )
 
     @pytest.mark.asyncio
-    async def test_get_user_profile_success(self, service, mock_users_repository, mock_profiles_repository):
+    async def test_get_user_profile_success(
+        self, service, mock_users_repository, mock_profiles_repository
+    ):
         """Test getting user profile for photo operations."""
         # Arrange
         telegram_id = 123456789
@@ -105,7 +107,9 @@ class TestPhotosService:
         assert exc_info.value.code == "profile_not_found"
 
     @pytest.mark.asyncio
-    async def test_upload_photo_invalid_content_type(self, service, mock_users_repository, mock_profiles_repository):
+    async def test_upload_photo_invalid_content_type(
+        self, service, mock_users_repository, mock_profiles_repository
+    ):
         """Test upload with invalid content type."""
         # Arrange
         telegram_id = 123456789
@@ -128,7 +132,9 @@ class TestPhotosService:
         assert exc_info.value.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_upload_photo_invalid_extension(self, service, mock_users_repository, mock_profiles_repository):
+    async def test_upload_photo_invalid_extension(
+        self, service, mock_users_repository, mock_profiles_repository
+    ):
         """Test upload with invalid file extension."""
         # Arrange
         telegram_id = 123456789
@@ -150,14 +156,24 @@ class TestPhotosService:
         assert exc_info.value.code == "photo_extension_not_allowed"
 
     @pytest.mark.asyncio
-    async def test_delete_photo_success(self, service, mock_users_repository, mock_profiles_repository, mock_photos_repository, mock_storage, mock_session):
+    async def test_delete_photo_success(
+        self,
+        service,
+        mock_users_repository,
+        mock_profiles_repository,
+        mock_photos_repository,
+        mock_storage,
+        mock_session,
+    ):
         """Test successful photo deletion."""
         # Arrange
         telegram_id = 123456789
         photo_id = 10
         user = MagicMock(id=1, telegram_id=telegram_id)
         profile = MagicMock(id=5, user_id=1)
-        photo = MagicMock(id=photo_id, profile_id=5, photo_url="https://minio.example.com/photo.jpg")
+        photo = MagicMock(
+            id=photo_id, profile_id=5, photo_url="https://minio.example.com/photo.jpg"
+        )
 
         mock_users_repository.get_by_telegram_id.return_value = user
         mock_profiles_repository.get_by_user_id.return_value = profile
@@ -168,12 +184,16 @@ class TestPhotosService:
         await service.delete_photo(telegram_id, photo_id)
 
         # Assert
-        mock_storage.remove_object_by_url.assert_called_once_with("https://minio.example.com/photo.jpg")
+        mock_storage.remove_object_by_url.assert_called_once_with(
+            "https://minio.example.com/photo.jpg"
+        )
         mock_photos_repository.delete_photo.assert_called_once_with(photo)
         mock_session.commit.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_delete_photo_not_found(self, service, mock_users_repository, mock_profiles_repository, mock_photos_repository):
+    async def test_delete_photo_not_found(
+        self, service, mock_users_repository, mock_profiles_repository, mock_photos_repository
+    ):
         """Test deleting non-existent photo."""
         # Arrange
         telegram_id = 123456789

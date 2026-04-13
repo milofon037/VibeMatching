@@ -1,6 +1,5 @@
 """Tests for bot feed service."""
 
-
 import pytest
 
 from bot.services.feed_service import feed_service

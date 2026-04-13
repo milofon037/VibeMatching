@@ -29,7 +29,9 @@ async def create_profile(
         users_repository=UsersRepository(session=session),
         session=session,
     )
-    profile = await service.create_profile(telegram_id=telegram_id, profile_data=payload.model_dump())
+    profile = await service.create_profile(
+        telegram_id=telegram_id, profile_data=payload.model_dump()
+    )
     return ProfileResponse.model_validate(profile)
 
 

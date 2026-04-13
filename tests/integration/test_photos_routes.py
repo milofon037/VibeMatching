@@ -30,7 +30,11 @@ class TestPhotosRoutes:
         )
         assert profile.status_code == 200
         profile_data_resp = profile.json()
-        return {"user_id": user_id, "telegram_id": telegram_id, "profile_id": profile_data_resp["id"]}
+        return {
+            "user_id": user_id,
+            "telegram_id": telegram_id,
+            "profile_id": profile_data_resp["id"],
+        }
 
     @pytest.mark.asyncio
     async def test_upload_photo_success(self, async_client: AsyncClient):

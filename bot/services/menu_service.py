@@ -54,7 +54,9 @@ class MenuService:
 
     async def on_referral_link(self, message: Message) -> None:
         telegram_id = message.from_user.id
-        await message.answer(f"🔗 Твоя ссылка для приглашений:\n\n{build_referral_link(telegram_id)}")
+        await message.answer(
+            f"🔗 Твоя ссылка для приглашений:\n\n{build_referral_link(telegram_id)}"
+        )
         await common_service.show_main_menu(message)
 
 

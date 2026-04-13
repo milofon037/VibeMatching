@@ -34,14 +34,20 @@ class ProfilesRepository:
         await self.session.refresh(profile)
         return profile
 
-    async def update_search_mode(self, profile: Profile, search_city_mode: SearchCityMode) -> Profile:
+    async def update_search_mode(
+        self, profile: Profile, search_city_mode: SearchCityMode
+    ) -> Profile:
         profile.search_city_mode = search_city_mode
         await self.session.flush()
         await self.session.refresh(profile)
         return profile
 
-    async def get_feed_profiles(self, requester_profile: Profile, from_user_id: int, limit: int) -> list[Profile]:
-        viewed_profiles_subquery = select(Swipe.to_profile_id).where(Swipe.from_user_id == from_user_id)
+    async def get_feed_profiles(
+        self, requester_profile: Profile, from_user_id: int, limit: int
+    ) -> list[Profile]:
+        viewed_profiles_subquery = select(Swipe.to_profile_id).where(
+            Swipe.from_user_id == from_user_id
+        )
 
         query = (
             select(Profile)

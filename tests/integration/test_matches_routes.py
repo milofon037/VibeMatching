@@ -30,7 +30,11 @@ class TestMatchesRoutes:
         )
         assert profile.status_code == 200
         profile_data_resp = profile.json()
-        return {"user_id": user_id, "telegram_id": telegram_id, "profile_id": profile_data_resp["id"]}
+        return {
+            "user_id": user_id,
+            "telegram_id": telegram_id,
+            "profile_id": profile_data_resp["id"],
+        }
 
     async def _create_mutual_like(
         self,
@@ -183,7 +187,9 @@ class TestMatchesRoutes:
 
         # Create multiple matches
         for i in range(3):
-            user = await self._register_and_create_profile(async_client, 1111111 + i + 1, f"Jane{i}", "F")
+            user = await self._register_and_create_profile(
+                async_client, 1111111 + i + 1, f"Jane{i}", "F"
+            )
             await self._create_mutual_like(
                 async_client,
                 user1["telegram_id"],

@@ -22,7 +22,9 @@ from bot.utils.profile_cards import send_profile_card
 
 
 class ProfileService:
-    async def upload_profile_photo(self, telegram_id: int, payload: bytes) -> tuple[int, dict[str, Any]]:
+    async def upload_profile_photo(
+        self, telegram_id: int, payload: bytes
+    ) -> tuple[int, dict[str, Any]]:
         return await api_client.upload_photo(
             telegram_id=telegram_id,
             payload=payload,
@@ -87,7 +89,9 @@ class ProfileService:
     async def _send_updated_profile_after_change(self, message: Message, telegram_id: int) -> None:
         updated_profile = await common_service.get_my_profile(telegram_id)
         if updated_profile:
-            await send_profile_card(message, updated_profile, reply_markup=my_profile_edit_keyboard())
+            await send_profile_card(
+                message, updated_profile, reply_markup=my_profile_edit_keyboard()
+            )
 
     async def handle_update_profile_value(self, message: Message, state: FSMContext) -> None:
         telegram_id = message.from_user.id
@@ -105,7 +109,9 @@ class ProfileService:
                 await message.answer("Возраст должен быть числом.")
                 return
 
-        status_code, response = await api_client.update_profile(telegram_id=telegram_id, payload={field: value})
+        status_code, response = await api_client.update_profile(
+            telegram_id=telegram_id, payload={field: value}
+        )
         if status_code != 200:
             await state.clear()
             await message.answer(extract_error_message(response), reply_markup=main_menu_keyboard())
@@ -138,17 +144,24 @@ class ProfileService:
                 "preferred_gender": data.get("preferred_gender"),
             }
 
-            status_code, response = await api_client.create_profile(telegram_id=telegram_id, payload=profile_payload)
+            status_code, response = await api_client.create_profile(
+                telegram_id=telegram_id, payload=profile_payload
+            )
             if status_code != 200:
                 awaiting_photo_upload.pop(telegram_id, None)
                 await state.clear()
-                await message.answer(extract_error_message(response), reply_markup=no_profile_menu_keyboard())
+                await message.answer(
+                    extract_error_message(response), reply_markup=no_profile_menu_keyboard()
+                )
                 return
 
             await self.upload_profile_photo(telegram_id=telegram_id, payload=payload)
             awaiting_photo_upload.pop(telegram_id, None)
             await state.clear()
-            await message.answer("✅ Анкета создана\nЗа заполнение анкеты начислено +X рейтинга", reply_markup=main_menu_keyboard())
+            await message.answer(
+                "✅ Анкета создана\nЗа заполнение анкеты начислено +X рейтинга",
+                reply_markup=main_menu_keyboard(),
+            )
             created_profile = await common_service.get_my_profile(telegram_id)
             if created_profile:
                 search_mode = created_profile.get("search_city_mode", "local")
@@ -158,11 +171,15 @@ class ProfileService:
                     f"{search_mode_human}.\n"
                     "Изменить его можно кнопкой 'Изменить режим поиска' в главном меню."
                 )
-                await send_profile_card(message, created_profile, reply_markup=my_profile_edit_keyboard())
+                await send_profile_card(
+                    message, created_profile, reply_markup=my_profile_edit_keyboard()
+                )
             return
 
         if purpose == "update_photo":
-            status_code, response = await self.upload_profile_photo(telegram_id=telegram_id, payload=payload)
+            status_code, response = await self.upload_profile_photo(
+                telegram_id=telegram_id, payload=payload
+            )
             awaiting_photo_upload.pop(telegram_id, None)
             if status_code == 200:
                 await message.answer("Фото анкеты обновлено.", reply_markup=main_menu_keyboard())
@@ -181,7 +198,9 @@ class ProfileService:
         if current_state == CreateProfileState.age.state and field == "gender":
             await state.update_data(gender=value)
             await callback.answer("Ок")
-            await callback.message.answer("Кто тебе интересен?", reply_markup=preferred_gender_keyboard())
+            await callback.message.answer(
+                "Кто тебе интересен?", reply_markup=preferred_gender_keyboard()
+            )
             return
 
         if field == "preferred_gender":
@@ -191,13 +210,20 @@ class ProfileService:
             await state.set_state(CreateProfileState.city)
             return
 
-        if current_state == UpdateProfileState.value.state and field in {"gender", "preferred_gender"}:
+        if current_state == UpdateProfileState.value.state and field in {
+            "gender",
+            "preferred_gender",
+        }:
             update_value = value if field == "gender" else (None if value == "any" else value)
-            status_code, response = await api_client.update_profile(telegram_id=telegram_id, payload={field: update_value})
+            status_code, response = await api_client.update_profile(
+                telegram_id=telegram_id, payload={field: update_value}
+            )
             if status_code != 200:
                 await state.clear()
                 await callback.answer("Ошибка")
-                await callback.message.answer(extract_error_message(response), reply_markup=main_menu_keyboard())
+                await callback.message.answer(
+                    extract_error_message(response), reply_markup=main_menu_keyboard()
+                )
                 return
 
             await state.clear()
@@ -216,13 +242,17 @@ class ProfileService:
             awaiting_photo_upload.pop(telegram_id, None)
             await state.clear()
             await callback.answer("Редактирование отменено")
-            await callback.message.answer("Изменение поля отменено.", reply_markup=main_menu_keyboard())
+            await callback.message.answer(
+                "Изменение поля отменено.", reply_markup=main_menu_keyboard()
+            )
             return
 
         if field == "photo":
             awaiting_photo_upload[telegram_id] = {"purpose": "update_photo"}
             await callback.answer("Ок")
-            await callback.message.answer("Отправь новое фото для анкеты", reply_markup=cancel_edit_keyboard())
+            await callback.message.answer(
+                "Отправь новое фото для анкеты", reply_markup=cancel_edit_keyboard()
+            )
             return
 
         await state.clear()

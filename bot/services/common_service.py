@@ -13,7 +13,9 @@ class CommonService:
         await message.answer("Главное меню:", reply_markup=main_menu_keyboard())
 
     async def show_no_profile_screen(self, message: Message) -> None:
-        await message.answer("Привет! Давай начнем искать твой vibem?)", reply_markup=no_profile_menu_keyboard())
+        await message.answer(
+            "Привет! Давай начнем искать твой vibem?)", reply_markup=no_profile_menu_keyboard()
+        )
 
     async def get_my_profile(self, telegram_id: int) -> dict[str, Any] | None:
         status_code, payload = await api_client.get_profile_me(telegram_id)

@@ -1,6 +1,5 @@
 """Tests for bot utils and formatters."""
 
-
 from bot.utils.formatters import build_referral_link, extract_error_message, format_profile_card
 
 
@@ -14,7 +13,7 @@ class TestProfileCardFormatter:
             "age": 25,
             "city": "Moscow",
             "interests": "Music, Sports",
-            "bio": "Software engineer"
+            "bio": "Software engineer",
         }
 
         result = format_profile_card(profile)
@@ -27,11 +26,7 @@ class TestProfileCardFormatter:
 
     def test_format_profile_card_missing_fields(self):
         """Test formatting profile with missing fields."""
-        profile = {
-            "name": "John",
-            "age": 25,
-            "city": None
-        }
+        profile = {"name": "John", "age": 25, "city": None}
 
         result = format_profile_card(profile)
 
@@ -53,12 +48,7 @@ class TestErrorMessageExtractor:
 
     def test_extract_error_message_nested_dict(self):
         """Test extracting error from nested dict."""
-        payload = {
-            "error": {
-                "code": "user_not_found",
-                "message": "User not found"
-            }
-        }
+        payload = {"error": {"code": "user_not_found", "message": "User not found"}}
 
         result = extract_error_message(payload)
 

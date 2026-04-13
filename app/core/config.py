@@ -62,11 +62,17 @@ class Settings(BaseSettings):
 
     @property
     def photo_allowed_content_types(self) -> list[str]:
-        return [item.strip() for item in self.photo_allowed_content_types_raw.split(",") if item.strip()]
+        return [
+            item.strip() for item in self.photo_allowed_content_types_raw.split(",") if item.strip()
+        ]
 
     @property
     def photo_allowed_extensions(self) -> list[str]:
-        return [item.strip().lower() for item in self.photo_allowed_extensions_raw.split(",") if item.strip()]
+        return [
+            item.strip().lower()
+            for item in self.photo_allowed_extensions_raw.split(",")
+            if item.strip()
+        ]
 
 
 settings = Settings()

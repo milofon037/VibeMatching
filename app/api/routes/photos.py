@@ -29,7 +29,9 @@ async def upload_photo(
         storage=MinioStorage(),
         session=session,
     )
-    photo = await service.upload_photo(telegram_id=telegram_id, file=file, requested_position=position)
+    photo = await service.upload_photo(
+        telegram_id=telegram_id, file=file, requested_position=position
+    )
     return PhotoUploadResponse(photo=PhotoResponse.model_validate(photo))
 
 

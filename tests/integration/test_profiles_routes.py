@@ -10,7 +10,9 @@ class TestProfilesRoutes:
 
     async def _register_user(self, async_client: AsyncClient, telegram_id: int) -> dict:
         """Helper to register a user. Returns both the user data and telegram_id."""
-        response = await async_client.post("/api/v1/users/register", json={"telegram_id": telegram_id})
+        response = await async_client.post(
+            "/api/v1/users/register", json={"telegram_id": telegram_id}
+        )
         assert response.status_code == 200
         return {**response.json(), "telegram_id": telegram_id}
 
@@ -26,7 +28,6 @@ class TestProfilesRoutes:
             "age": 25,
             "gender": "male",
             "city": "Moscow",
-
         }
 
         # Act
@@ -85,7 +86,9 @@ class TestProfilesRoutes:
         )
 
         # Act
-        response = await async_client.get("/api/v1/profiles/me", headers={"X-Telegram-Id": str(telegram_id)})
+        response = await async_client.get(
+            "/api/v1/profiles/me", headers={"X-Telegram-Id": str(telegram_id)}
+        )
 
         # Assert
         assert response.status_code == 200
@@ -101,7 +104,9 @@ class TestProfilesRoutes:
         telegram_id = user["telegram_id"]
 
         # Act
-        response = await async_client.get("/api/v1/profiles/me", headers={"X-Telegram-Id": str(telegram_id)})
+        response = await async_client.get(
+            "/api/v1/profiles/me", headers={"X-Telegram-Id": str(telegram_id)}
+        )
 
         # Assert
         assert response.status_code == 404
@@ -176,7 +181,12 @@ class TestProfilesRoutes:
         # Create other profiles
         for i in range(3):
             user = await self._register_user(async_client, 700000 + i)
-            other_profile = {"name": f"User{i}", "age": 25 + i, "gender": "female", "city": "Moscow"}
+            other_profile = {
+                "name": f"User{i}",
+                "age": 25 + i,
+                "gender": "female",
+                "city": "Moscow",
+            }
             await async_client.post(
                 "/api/v1/profiles/create",
                 json=other_profile,
@@ -184,7 +194,9 @@ class TestProfilesRoutes:
             )
 
         # Act - get feed
-        response = await async_client.get("/api/v1/profiles/feed", headers={"X-Telegram-Id": str(user1_telegram_id)})
+        response = await async_client.get(
+            "/api/v1/profiles/feed", headers={"X-Telegram-Id": str(user1_telegram_id)}
+        )
 
         # Assert
         assert response.status_code == 200
@@ -200,7 +212,9 @@ class TestProfilesRoutes:
         telegram_id = user["telegram_id"]
 
         # Act
-        response = await async_client.get("/api/v1/profiles/feed", headers={"X-Telegram-Id": str(telegram_id)})
+        response = await async_client.get(
+            "/api/v1/profiles/feed", headers={"X-Telegram-Id": str(telegram_id)}
+        )
 
         # Assert
         assert response.status_code == 404

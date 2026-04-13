@@ -44,7 +44,7 @@ async def test_get_profile_me_success():
             "name": "John",
             "age": 25,
             "gender": "male",
-            "city": "Moscow"
+            "city": "Moscow",
         }
 
         mock_client = AsyncMock()
@@ -86,12 +86,7 @@ async def test_create_profile_success():
     """Test profile creation."""
     client = BackendClient(base_url="http://localhost:8000/api/v1")
 
-    profile_data = {
-        "name": "John",
-        "age": 25,
-        "gender": "male",
-        "city": "Moscow"
-    }
+    profile_data = {"name": "John", "age": 25, "gender": "male", "city": "Moscow"}
 
     with patch("httpx.AsyncClient") as mock_client_class:
         mock_response = MagicMock()
