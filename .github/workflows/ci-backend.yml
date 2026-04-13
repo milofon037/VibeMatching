@@ -22,6 +22,35 @@ jobs:
   lint-and-type-check:
     runs-on: ubuntu-latest
     name: Lint & Type Check
+    env:
+          APP_NAME: VibeMatching API
+          SERVICE_NAME: vibematching-bot
+          HEALTH_STATUS_OK: ok
+          APP_ENV: test
+          DEBUG: "true"
+          API_V1_PREFIX: /api/v1
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_db
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5433
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          REDIS_DB: 0
+          RABBITMQ_HOST: localhost
+          RABBITMQ_PORT: 5672
+          RABBITMQ_USER: guest
+          RABBITMQ_PASSWORD: guest
+          MINIO_ENDPOINT: localhost:9000
+          MINIO_ACCESS_KEY: minioadmin
+          MINIO_SECRET_KEY: minioadmin
+          MINIO_BUCKET: profile-photos
+          MINIO_SECURE: "false"
+          PHOTO_MAX_PER_PROFILE: 5
+          PHOTO_MAX_FILE_SIZE_BYTES: 5242880
+          PHOTO_ALLOWED_CONTENT_TYPES: image/jpeg,image/png,image/webp
+          PHOTO_ALLOWED_EXTENSIONS: .jpg,.jpeg,.png,.webp
+          FEED_BATCH_SIZE: 20
     defaults:
       run:
         working-directory: .
@@ -108,11 +137,12 @@ jobs:
       - name: Run integration tests
         run: poetry run pytest tests/integration -v --cov=app --cov-report=xml -m integration
         env:
-          TEST_DATABASE_URL: sqlite+aiosqlite:///:memory:
+          TEST_DATABASE_URL: "sqlite+aiosqlite:///:memory:"
 
   dependency-check:
     runs-on: ubuntu-latest
     name: Dependency Check
+    needs: lint-and-type-check
     defaults:
       run:
         working-directory: .
@@ -130,3 +160,5 @@ jobs:
           pip install poetry
           poetry install
           poetry run safety check --json
+
+
