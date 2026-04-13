@@ -37,7 +37,7 @@ class TestBotSettings:
         """Test both settings configured."""
         env_vars = {
             "TELEGRAM_BOT_TOKEN": "token_xyz",
-            "BOT_BACKEND_URL": "http://prod.api.com/api/v1"
+            "BOT_BACKEND_URL": "http://prod.api.com/api/v1",
         }
         with patch.dict(os.environ, env_vars):
             settings = BotSettings()

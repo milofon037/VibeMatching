@@ -47,7 +47,9 @@ class PhotosService:
             )
         return user, profile
 
-    async def upload_photo(self, telegram_id: int, file: UploadFile, requested_position: int | None):
+    async def upload_photo(
+        self, telegram_id: int, file: UploadFile, requested_position: int | None
+    ):
         _, profile = await self._get_user_profile(telegram_id)
         _ = requested_position
 
@@ -82,7 +84,9 @@ class PhotosService:
             )
 
         object_name = f"profile_{profile.id}/{uuid4().hex}{file_extension}"
-        photo_url = self.storage.upload_bytes(object_name=object_name, payload=payload, content_type=file.content_type)
+        photo_url = self.storage.upload_bytes(
+            object_name=object_name, payload=payload, content_type=file.content_type
+        )
         existing_photos = await self.photos_repository.get_by_profile_id(profile.id)
 
         try:
@@ -90,7 +94,9 @@ class PhotosService:
                 self.storage.remove_object_by_url(existing_photo.photo_url)
                 await self.photos_repository.delete_photo(existing_photo)
 
-            photo = await self.photos_repository.create_photo(profile_id=profile.id, photo_url=photo_url, position=1)
+            photo = await self.photos_repository.create_photo(
+                profile_id=profile.id, photo_url=photo_url, position=1
+            )
             await self.session.commit()
             return photo
         except IntegrityError as err:

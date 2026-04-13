@@ -19,7 +19,9 @@ class SwipesRepository:
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def create_swipe(self, from_user_id: int, to_profile_id: int, action: SwipeAction) -> Swipe:
+    async def create_swipe(
+        self, from_user_id: int, to_profile_id: int, action: SwipeAction
+    ) -> Swipe:
         swipe = Swipe(from_user_id=from_user_id, to_profile_id=to_profile_id, action=action)
         self.session.add(swipe)
         await self.session.flush()

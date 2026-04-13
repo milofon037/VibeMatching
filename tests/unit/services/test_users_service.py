@@ -90,11 +90,16 @@ class TestUsersService:
         )
 
     @pytest.mark.asyncio
-    async def test_register_user_integrity_error_recovery(self, service, mock_repository, mock_session):
+    async def test_register_user_integrity_error_recovery(
+        self, service, mock_repository, mock_session
+    ):
         """Test recovery from IntegrityError during registration."""
         # Arrange
         telegram_id = 123456789
-        mock_repository.get_by_telegram_id.side_effect = [None, MagicMock(id=1, telegram_id=telegram_id)]
+        mock_repository.get_by_telegram_id.side_effect = [
+            None,
+            MagicMock(id=1, telegram_id=telegram_id),
+        ]
         mock_repository.create_user.side_effect = IntegrityError(
             statement="INSERT INTO users VALUES (...)",
             params={},
@@ -144,7 +149,9 @@ class TestUsersService:
         # Arrange
         telegram_id = 123456789
         existing_user = MagicMock(id=1, telegram_id=telegram_id)
-        updated_user = MagicMock(id=1, telegram_id=telegram_id, last_active_at="2026-04-10T10:00:00")
+        updated_user = MagicMock(
+            id=1, telegram_id=telegram_id, last_active_at="2026-04-10T10:00:00"
+        )
 
         mock_repository.get_by_telegram_id.return_value = existing_user
         mock_repository.update_last_active.return_value = updated_user

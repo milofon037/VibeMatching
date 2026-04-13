@@ -80,7 +80,9 @@ class TestUsersRoutes:
     async def test_get_current_user_success(self, async_client: AsyncClient, test_db):
         """Test getting current user info."""
         # Arrange - register user first
-        create_response = await async_client.post("/api/v1/users/register", json={"telegram_id": 222})
+        create_response = await async_client.post(
+            "/api/v1/users/register", json={"telegram_id": 222}
+        )
         user_data = create_response.json()
 
         # Act - get current user (need to pass auth with telegram_id)
@@ -105,11 +107,15 @@ class TestUsersRoutes:
     async def test_update_activity_success(self, async_client: AsyncClient):
         """Test updating user activity."""
         # Arrange - register user first
-        create_response = await async_client.post("/api/v1/users/register", json={"telegram_id": 333})
+        create_response = await async_client.post(
+            "/api/v1/users/register", json={"telegram_id": 333}
+        )
         user_data = create_response.json()
 
         # Act - update activity with telegram_id
-        response = await async_client.patch("/api/v1/users/activity", headers={"X-Telegram-Id": "333"})
+        response = await async_client.patch(
+            "/api/v1/users/activity", headers={"X-Telegram-Id": "333"}
+        )
 
         # Assert
         assert response.status_code == 200
@@ -121,7 +127,9 @@ class TestUsersRoutes:
     async def test_update_activity_user_not_found(self, async_client: AsyncClient):
         """Test updating activity for non-existent user."""
         # Act
-        response = await async_client.patch("/api/v1/users/activity", headers={"X-Telegram-Id": "99999"})
+        response = await async_client.patch(
+            "/api/v1/users/activity", headers={"X-Telegram-Id": "99999"}
+        )
 
         # Assert
         assert response.status_code == 404

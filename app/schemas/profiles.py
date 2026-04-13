@@ -18,7 +18,9 @@ class ProfileCreateRequest(BaseModel):
     def validate_preferred_age_range(self):
         if self.preferred_age_min is not None and self.preferred_age_max is not None:
             if self.preferred_age_min > self.preferred_age_max:
-                raise ValueError("preferred_age_min must be less than or equal to preferred_age_max")
+                raise ValueError(
+                    "preferred_age_min must be less than or equal to preferred_age_max"
+                )
         return self
 
 
@@ -37,7 +39,9 @@ class ProfileUpdateRequest(BaseModel):
     def validate_preferred_age_range(self):
         if self.preferred_age_min is not None and self.preferred_age_max is not None:
             if self.preferred_age_min > self.preferred_age_max:
-                raise ValueError("preferred_age_min must be less than or equal to preferred_age_max")
+                raise ValueError(
+                    "preferred_age_min must be less than or equal to preferred_age_max"
+                )
         return self
 
 

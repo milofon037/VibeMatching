@@ -38,7 +38,9 @@ class TestProfilesService:
         )
 
     @pytest.mark.asyncio
-    async def test_create_profile_success(self, service, mock_users_repository, mock_profiles_repository, mock_session):
+    async def test_create_profile_success(
+        self, service, mock_users_repository, mock_profiles_repository, mock_session
+    ):
         """Test successful profile creation."""
         # Arrange
         telegram_id = 123456789
@@ -75,7 +77,9 @@ class TestProfilesService:
         assert exc_info.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_create_profile_already_exists(self, service, mock_users_repository, mock_profiles_repository):
+    async def test_create_profile_already_exists(
+        self, service, mock_users_repository, mock_profiles_repository
+    ):
         """Test that user can only have one active profile."""
         # Arrange
         telegram_id = 123456789
@@ -94,7 +98,9 @@ class TestProfilesService:
         assert exc_info.value.status_code == 409
 
     @pytest.mark.asyncio
-    async def test_get_my_profile_success(self, service, mock_users_repository, mock_profiles_repository):
+    async def test_get_my_profile_success(
+        self, service, mock_users_repository, mock_profiles_repository
+    ):
         """Test getting user's own profile."""
         # Arrange
         telegram_id = 123456789
@@ -113,7 +119,9 @@ class TestProfilesService:
         assert result.name == "John"
 
     @pytest.mark.asyncio
-    async def test_get_my_profile_not_found(self, service, mock_users_repository, mock_profiles_repository):
+    async def test_get_my_profile_not_found(
+        self, service, mock_users_repository, mock_profiles_repository
+    ):
         """Test getting profile when it doesn't exist."""
         # Arrange
         telegram_id = 123456789
@@ -130,7 +138,9 @@ class TestProfilesService:
         assert exc_info.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_update_profile_success(self, service, mock_users_repository, mock_profiles_repository, mock_session):
+    async def test_update_profile_success(
+        self, service, mock_users_repository, mock_profiles_repository, mock_session
+    ):
         """Test updating profile."""
         # Arrange
         telegram_id = 123456789
@@ -155,7 +165,9 @@ class TestProfilesService:
         mock_session.commit.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_update_search_mode_success(self, service, mock_users_repository, mock_profiles_repository, mock_session):
+    async def test_update_search_mode_success(
+        self, service, mock_users_repository, mock_profiles_repository, mock_session
+    ):
         """Test updating search mode."""
         # Arrange
         telegram_id = 123456789
@@ -179,7 +191,9 @@ class TestProfilesService:
         mock_session.commit.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_feed_profile_not_created(self, service, mock_users_repository, mock_profiles_repository):
+    async def test_get_feed_profile_not_created(
+        self, service, mock_users_repository, mock_profiles_repository
+    ):
         """Test that feed requires user to have a profile."""
         # Arrange
         telegram_id = 123456789
@@ -195,7 +209,9 @@ class TestProfilesService:
         assert exc_info.value.code == "profile_not_found"
 
     @pytest.mark.asyncio
-    async def test_get_feed_invalid_limit(self, service, mock_users_repository, mock_profiles_repository):
+    async def test_get_feed_invalid_limit(
+        self, service, mock_users_repository, mock_profiles_repository
+    ):
         """Test that negative feed limit raises error."""
         # Arrange
         telegram_id = 123456789

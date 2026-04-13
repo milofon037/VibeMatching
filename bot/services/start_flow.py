@@ -17,7 +17,9 @@ class StartFlowService:
             await message.answer("Главное меню:", reply_markup=main_menu_keyboard())
             return
 
-        await message.answer("Привет! Давай начнем искать твой vibem?)", reply_markup=no_profile_menu_keyboard())
+        await message.answer(
+            "Привет! Давай начнем искать твой vibem?)", reply_markup=no_profile_menu_keyboard()
+        )
 
 
 start_flow_service = StartFlowService()

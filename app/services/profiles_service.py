@@ -80,7 +80,9 @@ class ProfilesService:
 
     async def update_search_mode(self, telegram_id: int, search_city_mode: SearchCityMode):
         profile = await self.get_my_profile(telegram_id)
-        updated = await self.profiles_repository.update_search_mode(profile, search_city_mode=search_city_mode)
+        updated = await self.profiles_repository.update_search_mode(
+            profile, search_city_mode=search_city_mode
+        )
         await self.session.commit()
         return updated
 

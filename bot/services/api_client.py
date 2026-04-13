@@ -15,20 +15,28 @@ class BackendClient:
 
     async def register_user(self, telegram_id: int) -> tuple[int, dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(f"{self.base_url}/users/register", json={"telegram_id": telegram_id})
+            response = await client.post(
+                f"{self.base_url}/users/register", json={"telegram_id": telegram_id}
+            )
             return response.status_code, response.json()
 
     async def update_activity(self, telegram_id: int) -> tuple[int, dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.patch(f"{self.base_url}/users/activity", headers=self._headers(telegram_id))
+            response = await client.patch(
+                f"{self.base_url}/users/activity", headers=self._headers(telegram_id)
+            )
             return response.status_code, response.json()
 
     async def get_profile_me(self, telegram_id: int) -> tuple[int, dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.get(f"{self.base_url}/profiles/me", headers=self._headers(telegram_id))
+            response = await client.get(
+                f"{self.base_url}/profiles/me", headers=self._headers(telegram_id)
+            )
             return response.status_code, response.json()
 
-    async def create_profile(self, telegram_id: int, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    async def create_profile(
+        self, telegram_id: int, payload: dict[str, Any]
+    ) -> tuple[int, dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(
                 f"{self.base_url}/profiles/create",
@@ -37,7 +45,9 @@ class BackendClient:
             )
             return response.status_code, response.json()
 
-    async def update_profile(self, telegram_id: int, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    async def update_profile(
+        self, telegram_id: int, payload: dict[str, Any]
+    ) -> tuple[int, dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.patch(
                 f"{self.base_url}/profiles/update",
@@ -46,7 +56,9 @@ class BackendClient:
             )
             return response.status_code, response.json()
 
-    async def update_search_mode(self, telegram_id: int, search_city_mode: str) -> tuple[int, dict[str, Any]]:
+    async def update_search_mode(
+        self, telegram_id: int, search_city_mode: str
+    ) -> tuple[int, dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.patch(
                 f"{self.base_url}/profiles/search-mode",
@@ -55,7 +67,9 @@ class BackendClient:
             )
             return response.status_code, response.json()
 
-    async def feed(self, telegram_id: int, limit: int = 1) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
+    async def feed(
+        self, telegram_id: int, limit: int = 1
+    ) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.get(
                 f"{self.base_url}/profiles/feed",
@@ -82,12 +96,18 @@ class BackendClient:
             )
             return response.status_code, response.json()
 
-    async def get_matches(self, telegram_id: int) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
+    async def get_matches(
+        self, telegram_id: int
+    ) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.get(f"{self.base_url}/matches", headers=self._headers(telegram_id))
+            response = await client.get(
+                f"{self.base_url}/matches", headers=self._headers(telegram_id)
+            )
             return response.status_code, response.json()
 
-    async def upload_photo(self, telegram_id: int, payload: bytes, filename: str = "photo.jpg") -> tuple[int, dict[str, Any]]:
+    async def upload_photo(
+        self, telegram_id: int, payload: bytes, filename: str = "photo.jpg"
+    ) -> tuple[int, dict[str, Any]]:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 f"{self.base_url}/photos/upload",
@@ -96,7 +116,9 @@ class BackendClient:
             )
             return response.status_code, response.json()
 
-    async def outgoing_likes(self, telegram_id: int, limit: int = 20) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
+    async def outgoing_likes(
+        self, telegram_id: int, limit: int = 20
+    ) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.get(
                 f"{self.base_url}/swipe/likes/outgoing",
@@ -105,7 +127,9 @@ class BackendClient:
             )
             return response.status_code, response.json()
 
-    async def incoming_likes(self, telegram_id: int, limit: int = 20) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
+    async def incoming_likes(
+        self, telegram_id: int, limit: int = 20
+    ) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.get(
                 f"{self.base_url}/swipe/likes/incoming",
@@ -114,7 +138,9 @@ class BackendClient:
             )
             return response.status_code, response.json()
 
-    async def get_profile_photos(self, profile_id: int) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
+    async def get_profile_photos(
+        self, profile_id: int
+    ) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.get(f"{self.base_url}/photos/{profile_id}")
             return response.status_code, response.json()

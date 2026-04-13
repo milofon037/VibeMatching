@@ -24,7 +24,9 @@ class PhotosRepository:
         return int(result.scalar_one())
 
     async def get_next_position(self, profile_id: int) -> int:
-        query = select(func.coalesce(func.max(Photo.position), 0)).where(Photo.profile_id == profile_id)
+        query = select(func.coalesce(func.max(Photo.position), 0)).where(
+            Photo.profile_id == profile_id
+        )
         result = await self.session.execute(query)
         max_position = int(result.scalar_one())
         return max_position + 1

@@ -21,7 +21,9 @@ class FeedService:
         await common_service.show_main_menu(message)
 
     async def _is_match(self, telegram_id: int, profile_id: int) -> bool:
-        incoming_code, incoming_payload = await api_client.incoming_likes(telegram_id=telegram_id, limit=200)
+        incoming_code, incoming_payload = await api_client.incoming_likes(
+            telegram_id=telegram_id, limit=200
+        )
         if incoming_code != 200 or not isinstance(incoming_payload, list):
             return False
         incoming_ids = {profile["id"] for profile in incoming_payload}
@@ -79,7 +81,9 @@ class FeedService:
             return
 
         if mode == "likes_outgoing":
-            await send_profile_card(message, profile, title=f"Ты лайкал ({index + 1}/{len(profiles)}):")
+            await send_profile_card(
+                message, profile, title=f"Ты лайкал ({index + 1}/{len(profiles)}):"
+            )
             if index >= len(profiles) - 1:
                 await self._finish_profiles_session(message, telegram_id)
                 return
@@ -87,7 +91,9 @@ class FeedService:
             return
 
         if mode == "matches":
-            await send_profile_card(message, profile, title=f"Твои метчи ({index + 1}/{len(profiles)}):")
+            await send_profile_card(
+                message, profile, title=f"Твои метчи ({index + 1}/{len(profiles)}):"
+            )
             await message.answer("Выберите действие:", reply_markup=next_or_exit_keyboard())
 
     async def show_feed_card(self, message: Message, telegram_id: int) -> None:
@@ -117,9 +123,18 @@ class FeedService:
             await common_service.show_main_menu(message)
             return
 
-        outgoing_code, outgoing = await api_client.outgoing_likes(telegram_id=telegram_id, limit=100)
-        incoming_code, incoming = await api_client.incoming_likes(telegram_id=telegram_id, limit=100)
-        if outgoing_code != 200 or incoming_code != 200 or not isinstance(outgoing, list) or not isinstance(incoming, list):
+        outgoing_code, outgoing = await api_client.outgoing_likes(
+            telegram_id=telegram_id, limit=100
+        )
+        incoming_code, incoming = await api_client.incoming_likes(
+            telegram_id=telegram_id, limit=100
+        )
+        if (
+            outgoing_code != 200
+            or incoming_code != 200
+            or not isinstance(outgoing, list)
+            or not isinstance(incoming, list)
+        ):
             await message.answer("Не удалось подготовить ленту метчей.")
             return
 
@@ -162,7 +177,9 @@ class FeedService:
 
     async def handle_feed_mode(self, callback: CallbackQuery) -> None:
         await callback.answer("Ок")
-        await callback.message.answer("Выбери режим поиска:", reply_markup=search_mode_inline_keyboard())
+        await callback.message.answer(
+            "Выбери режим поиска:", reply_markup=search_mode_inline_keyboard()
+        )
 
     async def handle_feed_action(self, callback: CallbackQuery) -> None:
         if not callback.data:
@@ -175,7 +192,9 @@ class FeedService:
         if action == "like":
             is_match = await self._is_match(telegram_id=telegram_id, profile_id=profile_id)
 
-            status_code, _ = await api_client.swipe_like(telegram_id=telegram_id, to_profile_id=profile_id)
+            status_code, _ = await api_client.swipe_like(
+                telegram_id=telegram_id, to_profile_id=profile_id
+            )
             if status_code == 200:
                 try:
                     await callback.message.edit_reply_markup(reply_markup=None)
@@ -187,7 +206,9 @@ class FeedService:
                 return
 
         if action == "skip":
-            status_code, _ = await api_client.swipe_skip(telegram_id=telegram_id, to_profile_id=profile_id)
+            status_code, _ = await api_client.swipe_skip(
+                telegram_id=telegram_id, to_profile_id=profile_id
+            )
             if status_code == 200:
                 try:
                     await callback.message.edit_reply_markup(reply_markup=None)
@@ -199,7 +220,9 @@ class FeedService:
 
         if action == "complaint":
             await callback.answer("Ок")
-            await callback.message.answer("Укажи причину жалобы:", reply_markup=complaint_reason_keyboard(profile_id))
+            await callback.message.answer(
+                "Укажи причину жалобы:", reply_markup=complaint_reason_keyboard(profile_id)
+            )
             return
 
         await callback.answer("Ошибка действия", show_alert=True)
@@ -210,7 +233,9 @@ class FeedService:
 
         _, mode = callback.data.split(":", maxsplit=1)
         telegram_id = callback.from_user.id
-        status_code, _ = await api_client.update_search_mode(telegram_id=telegram_id, search_city_mode=mode)
+        status_code, _ = await api_client.update_search_mode(
+            telegram_id=telegram_id, search_city_mode=mode
+        )
         if status_code == 200:
             await callback.answer("Режим обновлен")
             human_mode = "Только мой город" if mode == "local" else "Все анкеты"
@@ -236,12 +261,16 @@ class FeedService:
         profile_id = int(profile_id_raw)
 
         if action == "like":
-            status_code, _ = await api_client.swipe_like(telegram_id=telegram_id, to_profile_id=profile_id)
+            status_code, _ = await api_client.swipe_like(
+                telegram_id=telegram_id, to_profile_id=profile_id
+            )
             if status_code == 200:
                 await callback.answer("Ок")
                 await callback.message.answer("🎉 У вас матч!")
         elif action == "skip":
-            status_code, _ = await api_client.swipe_skip(telegram_id=telegram_id, to_profile_id=profile_id)
+            status_code, _ = await api_client.swipe_skip(
+                telegram_id=telegram_id, to_profile_id=profile_id
+            )
             if status_code == 200:
                 await callback.answer("Ок")
                 await callback.message.answer("Анкета пропущена")

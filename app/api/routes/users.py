@@ -13,10 +13,14 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.post("/register", response_model=UserResponse)
-async def register_user(payload: UserRegisterRequest, session: Annotated[AsyncSession, Depends(get_db_session)]) -> UserResponse:
+async def register_user(
+    payload: UserRegisterRequest, session: Annotated[AsyncSession, Depends(get_db_session)]
+) -> UserResponse:
     repository = UsersRepository(session=session)
     service = UsersService(repository=repository, session=session)
-    user = await service.register_user(telegram_id=payload.telegram_id, referral_code=payload.referral_code)
+    user = await service.register_user(
+        telegram_id=payload.telegram_id, referral_code=payload.referral_code
+    )
     return UserResponse.model_validate(user)
 
 

@@ -17,7 +17,9 @@ def preferred_gender_keyboard() -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(text="Мужчины", callback_data="answer:preferred_gender:male"),
-                InlineKeyboardButton(text="Женщины", callback_data="answer:preferred_gender:female"),
+                InlineKeyboardButton(
+                    text="Женщины", callback_data="answer:preferred_gender:female"
+                ),
             ],
             [InlineKeyboardButton(text="Все", callback_data="answer:preferred_gender:any")],
         ]
@@ -41,7 +43,9 @@ def feed_actions_keyboard(profile_id: int) -> InlineKeyboardMarkup:
             [
                 InlineKeyboardButton(text="❤️ Лайк", callback_data=f"feed:like:{profile_id}"),
                 InlineKeyboardButton(text="⏭ Скип", callback_data=f"feed:skip:{profile_id}"),
-                InlineKeyboardButton(text="🚨 Жалоба", callback_data=f"feed:complaint:{profile_id}"),
+                InlineKeyboardButton(
+                    text="🚨 Жалоба", callback_data=f"feed:complaint:{profile_id}"
+                ),
             ],
         ]
     )
@@ -70,7 +74,12 @@ def complaint_reason_keyboard(profile_id: int) -> InlineKeyboardMarkup:
         inline_keyboard=[
             [InlineKeyboardButton(text="Спам", callback_data=f"complaint:{profile_id}:spam")],
             [InlineKeyboardButton(text="Фейк", callback_data=f"complaint:{profile_id}:fake")],
-            [InlineKeyboardButton(text="Неприемлемый контент", callback_data=f"complaint:{profile_id}:inappropriate")],
+            [
+                InlineKeyboardButton(
+                    text="Неприемлемый контент",
+                    callback_data=f"complaint:{profile_id}:inappropriate",
+                )
+            ],
         ]
     )
 
@@ -79,8 +88,12 @@ def incoming_like_actions_keyboard(profile_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="❤️ Ответить лайком", callback_data=f"incoming:like:{profile_id}"),
-                InlineKeyboardButton(text="❌ Пропустить", callback_data=f"incoming:skip:{profile_id}"),
+                InlineKeyboardButton(
+                    text="❤️ Ответить лайком", callback_data=f"incoming:like:{profile_id}"
+                ),
+                InlineKeyboardButton(
+                    text="❌ Пропустить", callback_data=f"incoming:skip:{profile_id}"
+                ),
             ]
         ]
     )

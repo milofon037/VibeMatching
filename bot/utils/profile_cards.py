@@ -39,14 +39,20 @@ async def send_profile_card(
 
         if parsed_url.scheme in {"http", "https"}:
             try:
-                await message.answer_photo(photo=photo_url, caption=caption, reply_markup=reply_markup)
+                await message.answer_photo(
+                    photo=photo_url, caption=caption, reply_markup=reply_markup
+                )
                 return
             except Exception as exc:
-                logger.warning("failed to send photo by url for profile_id=%s: %s", profile.get("id"), exc)
+                logger.warning(
+                    "failed to send photo by url for profile_id=%s: %s", profile.get("id"), exc
+                )
 
         # For private object storage (s3://...) and failed public URLs, ask backend
         # for raw bytes of the primary photo and upload it directly to Telegram.
-        status_code, payload, content_type = await api_client.get_primary_profile_photo_raw(int(profile["id"]))
+        status_code, payload, content_type = await api_client.get_primary_profile_photo_raw(
+            int(profile["id"])
+        )
         if status_code == 200 and payload:
             file_ext = ".jpg"
             if content_type == "image/png":

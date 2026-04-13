@@ -79,7 +79,9 @@ class TestSwipesService:
         to_profile_id = 5
         from_user = MagicMock(id=1, telegram_id=from_telegram_id)
         to_profile = MagicMock(id=to_profile_id, user_id=2)
-        swipe = MagicMock(id=1, from_user_id=1, to_profile_id=to_profile_id, action=SwipeAction.LIKE)
+        swipe = MagicMock(
+            id=1, from_user_id=1, to_profile_id=to_profile_id, action=SwipeAction.LIKE
+        )
 
         mock_users_repository.get_by_telegram_id.return_value = from_user
         mock_profiles_repository.get_by_id.return_value = to_profile
@@ -110,7 +112,9 @@ class TestSwipesService:
         to_profile_id = 5
         from_user = MagicMock(id=1)
         to_profile = MagicMock(id=to_profile_id, user_id=2)
-        swipe = MagicMock(id=1, from_user_id=1, to_profile_id=to_profile_id, action=SwipeAction.SKIP)
+        swipe = MagicMock(
+            id=1, from_user_id=1, to_profile_id=to_profile_id, action=SwipeAction.SKIP
+        )
 
         mock_users_repository.get_by_telegram_id.return_value = from_user
         mock_profiles_repository.get_by_id.return_value = to_profile
@@ -124,7 +128,9 @@ class TestSwipesService:
         assert result.action == SwipeAction.SKIP
 
     @pytest.mark.asyncio
-    async def test_swipe_target_profile_not_found(self, service, mock_users_repository, mock_profiles_repository):
+    async def test_swipe_target_profile_not_found(
+        self, service, mock_users_repository, mock_profiles_repository
+    ):
         """Test swiping non-existent profile."""
         # Arrange
         from_telegram_id = 123456789
@@ -142,7 +148,9 @@ class TestSwipesService:
         assert exc_info.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_swipe_self_forbidden(self, service, mock_users_repository, mock_profiles_repository):
+    async def test_swipe_self_forbidden(
+        self, service, mock_users_repository, mock_profiles_repository
+    ):
         """Test that user cannot swipe their own profile."""
         # Arrange
         from_telegram_id = 123456789

@@ -17,7 +17,9 @@ class UsersService:
             return existing
 
         try:
-            created = await self.repository.create_user(telegram_id=telegram_id, referral_code=referral_code)
+            created = await self.repository.create_user(
+                telegram_id=telegram_id, referral_code=referral_code
+            )
             await self.session.commit()
             return created
         except IntegrityError as err:

@@ -11,7 +11,9 @@ class Photo(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    profile_id: Mapped[int] = mapped_column(ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    profile_id: Mapped[int] = mapped_column(
+        ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     photo_url: Mapped[str] = mapped_column(String(512), nullable=False)
     position: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
