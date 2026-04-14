@@ -8,8 +8,10 @@ from app.core.database import get_db_session
 from app.core.minio_client import MinioStorage
 from app.repositories.photos_repository import PhotosRepository
 from app.repositories.profiles_repository import ProfilesRepository
+from app.repositories.ratings_repository import RatingsRepository
 from app.repositories.users_repository import UsersRepository
 from app.schemas.photos import PhotoDeleteResponse, PhotoResponse, PhotoUploadResponse
+from app.services.events_service import LikeEventHandler
 from app.services.photos_service import PhotosService
 
 router = APIRouter(prefix="/photos", tags=["photos"])
@@ -28,6 +30,8 @@ async def upload_photo(
         users_repository=UsersRepository(session=session),
         storage=MinioStorage(),
         session=session,
+        ratings_repository=RatingsRepository(session=session),
+        event_handler=LikeEventHandler(),
     )
     photo = await service.upload_photo(
         telegram_id=telegram_id, file=file, requested_position=position
@@ -46,6 +50,8 @@ async def get_my_photos(
         users_repository=UsersRepository(session=session),
         storage=MinioStorage(),
         session=session,
+        ratings_repository=RatingsRepository(session=session),
+        event_handler=LikeEventHandler(),
     )
     photos = await service.get_my_photos(telegram_id=telegram_id)
     return [PhotoResponse.model_validate(photo) for photo in photos]
@@ -62,6 +68,8 @@ async def get_photo(
         users_repository=UsersRepository(session=session),
         storage=MinioStorage(),
         session=session,
+        ratings_repository=RatingsRepository(session=session),
+        event_handler=LikeEventHandler(),
     )
     photo = await service.get_photo_by_id(photo_id=photo_id)
     return PhotoResponse.model_validate(photo)
@@ -79,6 +87,8 @@ async def set_main_photo(
         users_repository=UsersRepository(session=session),
         storage=MinioStorage(),
         session=session,
+        ratings_repository=RatingsRepository(session=session),
+        event_handler=LikeEventHandler(),
     )
     photo = await service.set_main_photo(telegram_id=telegram_id, photo_id=photo_id)
     return PhotoResponse.model_validate(photo)
@@ -96,6 +106,8 @@ async def delete_photo(
         users_repository=UsersRepository(session=session),
         storage=MinioStorage(),
         session=session,
+        ratings_repository=RatingsRepository(session=session),
+        event_handler=LikeEventHandler(),
     )
     await service.delete_photo(telegram_id=telegram_id, photo_id=photo_id)
     return PhotoDeleteResponse(photo_id=photo_id)

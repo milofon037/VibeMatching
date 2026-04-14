@@ -4,9 +4,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from app.core.config import settings
 from app.core.errors import APIError
 from app.models.enums import SearchCityMode
 from app.services.profiles_service import ProfilesService
+from app.services.ranking_client import RankingServiceUnavailable
 
 
 @pytest.mark.unit
@@ -226,3 +228,76 @@ class TestProfilesService:
             await service.get_feed(telegram_id, limit=-1)
 
         assert exc_info.value.code == "feed_limit_invalid"
+
+    @pytest.mark.asyncio
+    async def test_get_feed_uses_ranking_service_order_when_enabled(self, monkeypatch):
+        """Feed should follow ranking service order when feature is enabled."""
+        telegram_id = 123456789
+        user = MagicMock(id=1)
+        my_profile = MagicMock(id=100, user_id=1, interests_catalog=[MagicMock(id=7)])
+        candidate_1 = MagicMock(id=11, user_id=2, interests_catalog=[MagicMock(id=7)])
+        candidate_2 = MagicMock(id=22, user_id=3, interests_catalog=[MagicMock(id=8)])
+
+        profiles_repository = AsyncMock()
+        users_repository = AsyncMock()
+        ratings_repository = AsyncMock()
+        ranking_client = AsyncMock()
+        session = AsyncMock()
+
+        users_repository.get_by_telegram_id.return_value = user
+        profiles_repository.get_by_user_id.return_value = my_profile
+        profiles_repository.get_feed_profiles.return_value = [candidate_1, candidate_2]
+        profiles_repository.get_viewed_profile_ids.return_value = []
+        ratings_repository.get_base_ranks_by_user_ids.return_value = {2: 0.4, 3: 0.9}
+        ranking_client.rank_feed.return_value = [22, 11]
+
+        service = ProfilesService(
+            profiles_repository=profiles_repository,
+            users_repository=users_repository,
+            session=session,
+            ratings_repository=ratings_repository,
+            ranking_client=ranking_client,
+        )
+
+        monkeypatch.setattr(settings, "ranking_service_enabled", True)
+
+        result = await service.get_feed(telegram_id=telegram_id, limit=2)
+
+        assert [item.id for item in result] == [22, 11]
+        ranking_client.rank_feed.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_feed_fallbacks_to_sql_when_ranking_unavailable(self, monkeypatch):
+        """Feed should keep SQL order when ranking service is unavailable."""
+        telegram_id = 123456789
+        user = MagicMock(id=1)
+        my_profile = MagicMock(id=100, user_id=1, interests_catalog=[MagicMock(id=7)])
+        candidate_1 = MagicMock(id=11, user_id=2, interests_catalog=[MagicMock(id=7)])
+        candidate_2 = MagicMock(id=22, user_id=3, interests_catalog=[MagicMock(id=8)])
+
+        profiles_repository = AsyncMock()
+        users_repository = AsyncMock()
+        ratings_repository = AsyncMock()
+        ranking_client = AsyncMock()
+        session = AsyncMock()
+
+        users_repository.get_by_telegram_id.return_value = user
+        profiles_repository.get_by_user_id.return_value = my_profile
+        profiles_repository.get_feed_profiles.return_value = [candidate_1, candidate_2]
+        profiles_repository.get_viewed_profile_ids.return_value = []
+        ratings_repository.get_base_ranks_by_user_ids.return_value = {2: 0.4, 3: 0.9}
+        ranking_client.rank_feed.side_effect = RankingServiceUnavailable("request_failed")
+
+        service = ProfilesService(
+            profiles_repository=profiles_repository,
+            users_repository=users_repository,
+            session=session,
+            ratings_repository=ratings_repository,
+            ranking_client=ranking_client,
+        )
+
+        monkeypatch.setattr(settings, "ranking_service_enabled", True)
+
+        result = await service.get_feed(telegram_id=telegram_id, limit=2)
+
+        assert [item.id for item in result] == [11, 22]

@@ -6,6 +6,8 @@ from bot.keyboards.inline import (
     complaint_reason_keyboard,
     edit_gender_keyboard,
     feed_actions_keyboard,
+    interests_confirm_keyboard,
+    interests_selection_keyboard,
     my_profile_edit_keyboard,
     search_mode_inline_keyboard,
 )
@@ -109,3 +111,27 @@ def test_my_profile_edit_keyboard():
     assert "Изменить имя" in texts
     assert "Изменить возраст" in texts
     assert "Изменить пол" in texts
+
+
+def test_interests_selection_keyboard():
+    """Test interests selection inline keyboard."""
+    keyboard = interests_selection_keyboard(
+        interests=[{"id": 1, "name": "music"}, {"id": 2, "name": "books"}],
+        selected_ids={2},
+    )
+
+    assert isinstance(keyboard, InlineKeyboardMarkup)
+    buttons = [btn for row in keyboard.inline_keyboard for btn in row]
+    assert any(btn.text == "music" for btn in buttons)
+    assert any(btn.text == "✅ books" for btn in buttons)
+
+
+def test_interests_confirm_keyboard():
+    """Test interests confirmation keyboard."""
+    keyboard = interests_confirm_keyboard()
+
+    assert isinstance(keyboard, InlineKeyboardMarkup)
+    buttons = [btn for row in keyboard.inline_keyboard for btn in row]
+    texts = [btn.text for btn in buttons]
+    assert "Подтвердить" in texts
+    assert "Заполнить еще раз" in texts

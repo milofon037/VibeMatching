@@ -78,6 +78,22 @@ class BackendClient:
             )
             return response.status_code, response.json()
 
+    async def list_interests(self) -> tuple[int, list[dict[str, Any]] | dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.get(f"{self.base_url}/interests")
+            return response.status_code, response.json()
+
+    async def update_profile_interests(
+        self, telegram_id: int, interest_ids: list[int]
+    ) -> tuple[int, dict[str, Any]]:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.patch(
+                f"{self.base_url}/profiles/interests",
+                headers=self._headers(telegram_id),
+                json={"interest_ids": interest_ids},
+            )
+            return response.status_code, response.json()
+
     async def swipe_like(self, telegram_id: int, to_profile_id: int) -> tuple[int, dict[str, Any]]:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(

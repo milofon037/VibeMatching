@@ -2,6 +2,15 @@
 
 import pytest
 from httpx import AsyncClient
+from sqlalchemy import select
+
+from app.core.config import settings
+from app.models.interest import Interest
+from app.models.rating import Rating
+from app.models.user import User
+from app.services.ranking_client import RankingServiceClient
+from ranking_service.domain.schemas import RankCandidate
+from ranking_service.services.scoring import rank_candidates
 
 
 @pytest.mark.integration
@@ -15,6 +24,36 @@ class TestProfilesRoutes:
         )
         assert response.status_code == 200
         return {**response.json(), "telegram_id": telegram_id}
+
+    async def _create_profile(
+        self,
+        async_client: AsyncClient,
+        telegram_id: int,
+        *,
+        name: str,
+        gender: str,
+        age: int = 25,
+        city: str = "Moscow",
+    ) -> dict:
+        response = await async_client.post(
+            "/api/v1/profiles/create",
+            json={"name": name, "age": age, "gender": gender, "city": city},
+            headers={"X-Telegram-Id": str(telegram_id)},
+        )
+        assert response.status_code == 200
+        return response.json()
+
+    async def _set_base_rank(self, test_db, telegram_id: int, base_rank: float) -> None:
+        result = await test_db.execute(select(User).where(User.telegram_id == telegram_id))
+        user = result.scalar_one()
+
+        rating_result = await test_db.execute(select(Rating).where(Rating.user_id == user.id))
+        rating = rating_result.scalar_one_or_none()
+        if rating is None:
+            test_db.add(Rating(user_id=user.id, base_rank=base_rank))
+        else:
+            rating.base_rank = base_rank
+        await test_db.commit()
 
     @pytest.mark.asyncio
     async def test_create_profile_success(self, async_client: AsyncClient, test_db):
@@ -243,3 +282,244 @@ class TestProfilesRoutes:
 
         # Assert
         assert response.status_code == 409  # Conflict
+
+    @pytest.mark.asyncio
+    async def test_feed_order_changes_after_interests_update(
+        self, async_client: AsyncClient, test_db, monkeypatch
+    ):
+        """Interest updates should affect ranking order in feed."""
+
+        async def fake_rank_feed(
+            self,
+            user_id: int,
+            user_interest_ids: list[int],
+            excluded_ids: list[int],
+            candidates,
+            limit: int,
+        ) -> list[int]:
+            rank_candidates_payload = [
+                RankCandidate(
+                    profile_id=item.profile_id,
+                    base_rank=item.base_rank,
+                    interests=item.interests,
+                )
+                for item in candidates
+            ]
+            return rank_candidates(
+                user_id=user_id,
+                user_interest_ids=user_interest_ids,
+                candidates=rank_candidates_payload,
+                excluded_ids=excluded_ids,
+                limit=limit,
+            )
+
+        monkeypatch.setattr(settings, "ranking_service_enabled", True)
+        monkeypatch.setattr(RankingServiceClient, "rank_feed", fake_rank_feed)
+
+        test_db.add_all([Interest(name="music"), Interest(name="books")])
+        await test_db.commit()
+
+        interests_response = await async_client.get("/api/v1/interests")
+        assert interests_response.status_code == 200
+        interests_by_name = {item["name"]: item["id"] for item in interests_response.json()}
+
+        me = await self._register_user(async_client, 901001)
+        candidate_match = await self._register_user(async_client, 901002)
+        candidate_other = await self._register_user(async_client, 901003)
+
+        await self._create_profile(
+            async_client,
+            me["telegram_id"],
+            name="Me",
+            gender="male",
+        )
+        profile_match = await self._create_profile(
+            async_client,
+            candidate_match["telegram_id"],
+            name="MatchByInterest",
+            gender="female",
+        )
+        profile_other = await self._create_profile(
+            async_client,
+            candidate_other["telegram_id"],
+            name="OtherInterest",
+            gender="female",
+        )
+
+        for tg_id in [me["telegram_id"], candidate_match["telegram_id"], candidate_other["telegram_id"]]:
+            await self._set_base_rank(test_db, tg_id, 0.5)
+
+        response = await async_client.patch(
+            "/api/v1/profiles/interests",
+            json={"interest_ids": [interests_by_name["music"]]},
+            headers={"X-Telegram-Id": str(me["telegram_id"])},
+        )
+        assert response.status_code == 200
+
+        response = await async_client.patch(
+            "/api/v1/profiles/interests",
+            json={"interest_ids": [interests_by_name["music"]]},
+            headers={"X-Telegram-Id": str(candidate_match["telegram_id"])},
+        )
+        assert response.status_code == 200
+
+        response = await async_client.patch(
+            "/api/v1/profiles/interests",
+            json={"interest_ids": [interests_by_name["books"]]},
+            headers={"X-Telegram-Id": str(candidate_other["telegram_id"])},
+        )
+        assert response.status_code == 200
+
+        feed_response = await async_client.get(
+            "/api/v1/profiles/feed",
+            headers={"X-Telegram-Id": str(me["telegram_id"])},
+        )
+        assert feed_response.status_code == 200
+        feed = feed_response.json()
+
+        assert feed[0]["id"] == profile_match["id"]
+        assert feed[1]["id"] == profile_other["id"]
+
+    @pytest.mark.asyncio
+    async def test_feed_order_changes_after_base_rank_update(
+        self, async_client: AsyncClient, test_db, monkeypatch
+    ):
+        """Base rank updates should affect ranking order in feed."""
+
+        async def fake_rank_feed(
+            self,
+            user_id: int,
+            user_interest_ids: list[int],
+            excluded_ids: list[int],
+            candidates,
+            limit: int,
+        ) -> list[int]:
+            rank_candidates_payload = [
+                RankCandidate(
+                    profile_id=item.profile_id,
+                    base_rank=item.base_rank,
+                    interests=item.interests,
+                )
+                for item in candidates
+            ]
+            return rank_candidates(
+                user_id=user_id,
+                user_interest_ids=user_interest_ids,
+                candidates=rank_candidates_payload,
+                excluded_ids=excluded_ids,
+                limit=limit,
+            )
+
+        monkeypatch.setattr(settings, "ranking_service_enabled", True)
+        monkeypatch.setattr(RankingServiceClient, "rank_feed", fake_rank_feed)
+
+        me = await self._register_user(async_client, 902001)
+        candidate_high = await self._register_user(async_client, 902002)
+        candidate_low = await self._register_user(async_client, 902003)
+
+        await self._create_profile(async_client, me["telegram_id"], name="Me", gender="male")
+        profile_high = await self._create_profile(
+            async_client,
+            candidate_high["telegram_id"],
+            name="HighRank",
+            gender="female",
+        )
+        profile_low = await self._create_profile(
+            async_client,
+            candidate_low["telegram_id"],
+            name="LowRank",
+            gender="female",
+        )
+
+        await self._set_base_rank(test_db, candidate_high["telegram_id"], 0.9)
+        await self._set_base_rank(test_db, candidate_low["telegram_id"], 0.2)
+
+        feed_response = await async_client.get(
+            "/api/v1/profiles/feed",
+            headers={"X-Telegram-Id": str(me["telegram_id"])},
+        )
+        assert feed_response.status_code == 200
+        feed = feed_response.json()
+
+        assert feed[0]["id"] == profile_high["id"]
+        assert feed[1]["id"] == profile_low["id"]
+
+    @pytest.mark.asyncio
+    async def test_stage1_e2e_smoke_registration_profile_interests_feed(
+        self, async_client: AsyncClient, test_db, monkeypatch
+    ):
+        """E2E smoke: register -> profile -> interests -> feed."""
+
+        async def fake_rank_feed(
+            self,
+            user_id: int,
+            user_interest_ids: list[int],
+            excluded_ids: list[int],
+            candidates,
+            limit: int,
+        ) -> list[int]:
+            rank_candidates_payload = [
+                RankCandidate(
+                    profile_id=item.profile_id,
+                    base_rank=item.base_rank,
+                    interests=item.interests,
+                )
+                for item in candidates
+            ]
+            return rank_candidates(
+                user_id=user_id,
+                user_interest_ids=user_interest_ids,
+                candidates=rank_candidates_payload,
+                excluded_ids=excluded_ids,
+                limit=limit,
+            )
+
+        monkeypatch.setattr(settings, "ranking_service_enabled", True)
+        monkeypatch.setattr(RankingServiceClient, "rank_feed", fake_rank_feed)
+
+        test_db.add(Interest(name="travel"))
+        await test_db.commit()
+
+        interests_response = await async_client.get("/api/v1/interests")
+        assert interests_response.status_code == 200
+        travel_interest_id = next(
+            item["id"] for item in interests_response.json() if item["name"] == "travel"
+        )
+
+        requester = await self._register_user(async_client, 903001)
+        candidate = await self._register_user(async_client, 903002)
+
+        await self._create_profile(async_client, requester["telegram_id"], name="Requester", gender="male")
+        candidate_profile = await self._create_profile(
+            async_client,
+            candidate["telegram_id"],
+            name="Candidate",
+            gender="female",
+        )
+
+        response = await async_client.patch(
+            "/api/v1/profiles/interests",
+            json={"interest_ids": [travel_interest_id]},
+            headers={"X-Telegram-Id": str(requester["telegram_id"])},
+        )
+        assert response.status_code == 200
+
+        response = await async_client.patch(
+            "/api/v1/profiles/interests",
+            json={"interest_ids": [travel_interest_id]},
+            headers={"X-Telegram-Id": str(candidate["telegram_id"])},
+        )
+        assert response.status_code == 200
+
+        await self._set_base_rank(test_db, requester["telegram_id"], 0.5)
+        await self._set_base_rank(test_db, candidate["telegram_id"], 0.7)
+
+        feed_response = await async_client.get(
+            "/api/v1/profiles/feed",
+            headers={"X-Telegram-Id": str(requester["telegram_id"])},
+        )
+        assert feed_response.status_code == 200
+        feed = feed_response.json()
+
+        assert len(feed) >= 1
+        assert feed[0]["id"] == candidate_profile["id"]

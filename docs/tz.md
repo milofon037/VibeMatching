@@ -125,7 +125,7 @@ Backend реализуется как монолитное приложение 
 - **photos:** `id`, `profile_id`, `photo_url`, `position`
 - **swipes:** `id`, `from_user_id`, `to_profile_id`, `action`, `created_at`
 - **matches:** `id`, `user1_id`, `user2_id`, `created_at`, `dialog_started`
-- **ratings:** `user_id`, `primary_score`, `behavior_score`, `penalty_score`, `total_score`, `updated_at`
+- **ratings:** `user_id`, `base_rank`, `updated_at`
 - **rating_history:** `id`, `user_id`, `event_type`, `delta`, `created_at`
 - **complaints:** `id`, `from_user_id`, `to_user_id`, `reason`, `created_at`
 
@@ -139,28 +139,14 @@ Backend реализуется как монолитное приложение 
 - наличие фото
 - наличие интересов и предпочтений
 
-### Поведенческий рейтинг
-Начисляется за действия:
-- `like` = +2
-- `match` = +5
-- `начало диалога` = +7
+### Base Rank (MVP)
+На этапе MVP рейтинг анкеты хранится в поле `base_rank` и считается из трех нормализованных сигналов `[0..1]`:
+- заполненность фото (`photo_count_score`) с весом `0.2`
+- длина био (`bio_length_score`) с весом `0.2`
+- активность (`activity_days_score`) с весом `0.6`
 
-*Также учитывается:*
-- соотношение лайков и пропусков
-- временные параметры (бонусная активность в определенное время суток)
-
-### Комбинированный рейтинг (Дополнительные факторы)
-- `referral` = +8 (начисляется за приглашение друга)
-
-### Штрафы
-- Жалобы: одна жалоба = -10
-- Снижение рейтинга за неактивность:
-  - более 3 дней = -2 в день
-  - более 7 дней = -5 в день
-*(Выполняется ежедневно через Celery)*
-
-### Итоговый рейтинг
-`total_score = primary_score + behavior_score - penalty_score`
+Итоговая формула:
+`base_rank = (photo_count_score * 0.2) + (bio_length_score * 0.2) + (activity_days_score * 0.6)`
 
 ---
 
@@ -168,7 +154,7 @@ Backend реализуется как монолитное приложение 
 
 1. **SQL фильтрация.** Исключаются: собственная анкета, просмотренные анкеты, неподходящий возраст, неподходящий пол, неактивные профили.
 2. **Географический фильтр.** Если `local` — только анкеты своего города. Если `global` — город не учитывается.
-3. **Сортировка.** По `total_score` (`ORDER BY total_score DESC`).
+3. **Сортировка.** По `base_rank` (`ORDER BY base_rank DESC`) или по результату ranking service.
 4. **Redis.** После первой выдачи сохраняются следующие 10 анкет.
 
 ---

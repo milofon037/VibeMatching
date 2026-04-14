@@ -15,6 +15,11 @@ class UsersRepository:
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
+    async def get_by_id(self, user_id: int) -> User | None:
+        query = select(User).where(User.id == user_id)
+        result = await self.session.execute(query)
+        return result.scalar_one_or_none()
+
     async def create_user(self, telegram_id: int, referral_code: str | None = None) -> User:
         user = User(telegram_id=telegram_id, referral_code=referral_code)
         self.session.add(user)

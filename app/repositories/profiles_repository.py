@@ -1,7 +1,9 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.enums import SearchCityMode
+from app.models.interest import Interest
 from app.models.profile import Profile
 from app.models.swipe import Swipe
 
@@ -42,6 +44,18 @@ class ProfilesRepository:
         await self.session.refresh(profile)
         return profile
 
+    async def set_interests(self, profile: Profile, interests: list[Interest]) -> Profile:
+        profile.interests_catalog = interests
+        profile.interests = ", ".join(sorted(interest.name for interest in interests)) if interests else None
+        await self.session.flush()
+        await self.session.refresh(profile)
+        return profile
+
+    async def get_viewed_profile_ids(self, from_user_id: int) -> list[int]:
+        query = select(Swipe.to_profile_id).where(Swipe.from_user_id == from_user_id)
+        result = await self.session.execute(query)
+        return [int(profile_id) for profile_id in result.scalars().all()]
+
     async def get_feed_profiles(
         self, requester_profile: Profile, from_user_id: int, limit: int
     ) -> list[Profile]:
@@ -51,6 +65,7 @@ class ProfilesRepository:
 
         query = (
             select(Profile)
+            .options(selectinload(Profile.interests_catalog))
             .where(Profile.user_id != from_user_id)
             .where(~Profile.id.in_(viewed_profiles_subquery))
         )
