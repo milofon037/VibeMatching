@@ -44,6 +44,7 @@ services:
       RABBITMQ_HOST: ${RABBITMQ_DOCKER_HOST}
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       MINIO_ENDPOINT: ${MINIO_DOCKER_HOST}:${MINIO_API_PORT}
+      RANKING_SERVICE_ENABLED: "true"
       RANKING_SERVICE_URL: http://ranking:8010
     depends_on:
       postgres:

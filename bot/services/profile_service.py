@@ -7,7 +7,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from bot.keyboards.inline import (
-    cancel_edit_keyboard,
     edit_gender_keyboard,
     edit_gender_with_cancel_keyboard,
     interests_confirm_keyboard,
@@ -15,7 +14,7 @@ from bot.keyboards.inline import (
     my_profile_edit_keyboard,
     preferred_gender_keyboard,
 )
-from bot.keyboards.reply import main_menu_keyboard, no_profile_menu_keyboard
+from bot.keyboards.reply import edit_cancel_menu_keyboard, main_menu_keyboard, no_profile_menu_keyboard
 from bot.services.common_service import common_service
 from bot.states.profile import CreateProfileState, UpdateProfileState
 from bot.utils.context import api_client, awaiting_photo_upload
@@ -301,6 +300,17 @@ class ProfileService:
         await message.answer("Поле обновлено.", reply_markup=main_menu_keyboard())
         await self._send_updated_profile_after_change(message, telegram_id)
 
+    async def handle_edit_cancel_message(self, message: Message, state: FSMContext) -> None:
+        telegram_id = message.from_user.id
+        current_state = await state.get_state()
+        has_update_photo_session = awaiting_photo_upload.get(telegram_id, {}).get("purpose") == "update_photo"
+        if current_state != UpdateProfileState.value.state and not has_update_photo_session:
+            return
+
+        awaiting_photo_upload.pop(telegram_id, None)
+        await state.clear()
+        await message.answer("Изменение поля отменено.", reply_markup=main_menu_keyboard())
+
     async def handle_photo_upload(self, message: Message, state: FSMContext) -> None:
         telegram_id = message.from_user.id
         session = awaiting_photo_upload.get(telegram_id)
@@ -436,7 +446,7 @@ class ProfileService:
             awaiting_photo_upload[telegram_id] = {"purpose": "update_photo"}
             await callback.answer("Ок")
             await callback.message.answer(
-                "Отправь новое фото для анкеты", reply_markup=cancel_edit_keyboard()
+                "Отправь новое фото для анкеты", reply_markup=edit_cancel_menu_keyboard()
             )
             return
 
@@ -447,13 +457,13 @@ class ProfileService:
 
         prompts = {
             "gender": ("Выбери новый пол:", edit_gender_with_cancel_keyboard()),
-            "interests": ("Выбери интересы (0/3):", cancel_edit_keyboard()),
-            "name": ("Введи новое имя:", cancel_edit_keyboard()),
-            "age": ("Введи новый возраст:", cancel_edit_keyboard()),
-            "city": ("Введи новый город:", cancel_edit_keyboard()),
-            "bio": ("Введи новое описание:", cancel_edit_keyboard()),
+            "interests": ("Выбери интересы (0/3):", edit_cancel_menu_keyboard()),
+            "name": ("Введи новое имя:", edit_cancel_menu_keyboard()),
+            "age": ("Введи новый возраст:", edit_cancel_menu_keyboard()),
+            "city": ("Введи новый город:", edit_cancel_menu_keyboard()),
+            "bio": ("Введи новое описание:", edit_cancel_menu_keyboard()),
         }
-        text, markup = prompts.get(field, ("Введи новое значение:", cancel_edit_keyboard()))
+        text, markup = prompts.get(field, ("Введи новое значение:", edit_cancel_menu_keyboard()))
         await callback.message.answer(text, reply_markup=markup)
 
         if field == "interests":

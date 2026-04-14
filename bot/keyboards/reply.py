@@ -26,3 +26,10 @@ def next_or_exit_keyboard() -> ReplyKeyboardMarkup:
         keyboard=[[KeyboardButton(text="Следующая"), KeyboardButton(text="Выйти")]],
         resize_keyboard=True,
     )
+
+
+def edit_cancel_menu_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text="Отменить изменение")]],
+        resize_keyboard=True,
+    )

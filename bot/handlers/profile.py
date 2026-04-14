@@ -38,6 +38,11 @@ async def on_interest_callback(callback: CallbackQuery, state: FSMContext) -> No
     await profile_service.handle_interest_callback(callback, state)
 
 
+@router.message(F.text == "Отменить изменение")
+async def cancel_profile_edit(message: Message, state: FSMContext) -> None:
+    await profile_service.handle_edit_cancel_message(message, state)
+
+
 @router.message(UpdateProfileState.value)
 async def update_profile_value(message: Message, state: FSMContext) -> None:
     await profile_service.handle_update_profile_value(message, state)

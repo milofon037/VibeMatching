@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies.auth import resolve_telegram_id
@@ -55,6 +56,46 @@ async def get_my_photos(
     )
     photos = await service.get_my_photos(telegram_id=telegram_id)
     return [PhotoResponse.model_validate(photo) for photo in photos]
+
+
+@router.get("/profile/{profile_id}", response_model=list[PhotoResponse])
+async def get_profile_photos(
+    profile_id: int,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[PhotoResponse]:
+    service = PhotosService(
+        photos_repository=PhotosRepository(session=session),
+        profiles_repository=ProfilesRepository(session=session),
+        users_repository=UsersRepository(session=session),
+        storage=MinioStorage(),
+        session=session,
+        ratings_repository=RatingsRepository(session=session),
+        event_handler=LikeEventHandler(),
+    )
+    photos = await service.get_profile_photos(profile_id=profile_id)
+    return [PhotoResponse.model_validate(photo) for photo in photos]
+
+
+@router.get("/profile/{profile_id}/primary/raw")
+async def get_profile_primary_photo_raw(
+    profile_id: int,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    service = PhotosService(
+        photos_repository=PhotosRepository(session=session),
+        profiles_repository=ProfilesRepository(session=session),
+        users_repository=UsersRepository(session=session),
+        storage=MinioStorage(),
+        session=session,
+        ratings_repository=RatingsRepository(session=session),
+        event_handler=LikeEventHandler(),
+    )
+    photo_data = await service.get_primary_photo_bytes(profile_id=profile_id)
+    if photo_data is None:
+        return Response(status_code=404)
+
+    payload, content_type = photo_data
+    return Response(content=payload, media_type=content_type or "image/jpeg")
 
 
 @router.get("/{photo_id}", response_model=PhotoResponse)
