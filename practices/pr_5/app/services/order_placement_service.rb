@@ -16,11 +16,12 @@ class OrderPlacementService
         order_date: Time.current,
         total_amount: 0
       )
+      products = Product.where(id: items.map { |i| i[:product_id] }).index_by(&:id)
 
       # 2. Добавляем позиции заказа в таблицу OrderItems
       total = 0
       items.each do |item|
-        product = Product.find(item[:product_id])
+        product = products[item[:product_id]]
         subtotal = product.price * item[:quantity]
         
         OrderItem.create!(

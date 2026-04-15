@@ -11,24 +11,24 @@ begin
   puts "\n--- Сценарий 1: Размещение заказа ---"
   
   customer1 = Customer.create_or_find_by(
-    email: "john@example.com"
+    email: "milofon@example.com"
   ) do |c|
-    c.first_name = "John"
-    c.last_name = "Doe"
+    c.first_name = "Milo"
+    c.last_name = "Fon"
   end
   puts "✓ Создан покупатель: #{customer1.first_name} #{customer1.last_name} (#{customer1.email})"
 
   product1 = Product.create_or_find_by(
     product_name: "Laptop"
   ) do |p|
-    p.price = 999.99
+    p.price = 99999.99
   end
   puts "✓ Создан продукт: #{product1.product_name} (#{product1.price})"
 
   product2 = Product.create_or_find_by(
     product_name: "Mouse"
   ) do |p|
-    p.price = 29.99
+    p.price = 2949.99
   end
   puts "✓ Создан продукт: #{product2.product_name} (#{product2.price})"
 
