@@ -1,0 +1,10 @@
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Local benchmark artifacts
+*.ndjson
+
+# Common local files
+.env
+.DS_Store

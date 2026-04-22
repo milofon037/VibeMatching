@@ -1,0 +1,3 @@
+broker,message_size_bytes,target_rps,latency_p95_ms,backlog_end,runs,degraded_runs
+rabbitmq,102400,1000,10145.937,0,6,6
+redis,-,-,-,-,-,-
