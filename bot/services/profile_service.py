@@ -14,7 +14,11 @@ from bot.keyboards.inline import (
     my_profile_edit_keyboard,
     preferred_gender_keyboard,
 )
-from bot.keyboards.reply import edit_cancel_menu_keyboard, main_menu_keyboard, no_profile_menu_keyboard
+from bot.keyboards.reply import (
+    edit_cancel_menu_keyboard,
+    main_menu_keyboard,
+    no_profile_menu_keyboard,
+)
 from bot.services.common_service import common_service
 from bot.states.profile import CreateProfileState, UpdateProfileState
 from bot.utils.context import api_client, awaiting_photo_upload

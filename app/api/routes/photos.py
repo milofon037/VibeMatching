@@ -7,10 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.auth import resolve_telegram_id
 from app.core.database import get_db_session
 from app.core.minio_client import MinioStorage
+from app.repositories.matches_repository import MatchesRepository
 from app.repositories.photos_repository import PhotosRepository
 from app.repositories.profiles_repository import ProfilesRepository
 from app.repositories.ratings_repository import RatingsRepository
-from app.repositories.matches_repository import MatchesRepository
 from app.repositories.swipes_repository import SwipesRepository
 from app.repositories.users_repository import UsersRepository
 from app.schemas.photos import PhotoDeleteResponse, PhotoResponse, PhotoUploadResponse
