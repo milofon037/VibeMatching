@@ -7,13 +7,14 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
 from bot.keyboards.inline import (
-    cancel_edit_keyboard,
     edit_gender_keyboard,
     edit_gender_with_cancel_keyboard,
+    interests_confirm_keyboard,
+    interests_selection_keyboard,
     my_profile_edit_keyboard,
     preferred_gender_keyboard,
 )
-from bot.keyboards.reply import main_menu_keyboard, no_profile_menu_keyboard
+from bot.keyboards.reply import edit_cancel_menu_keyboard, main_menu_keyboard, no_profile_menu_keyboard
 from bot.services.common_service import common_service
 from bot.states.profile import CreateProfileState, UpdateProfileState
 from bot.utils.context import api_client, awaiting_photo_upload
@@ -22,6 +23,67 @@ from bot.utils.profile_cards import send_profile_card
 
 
 class ProfileService:
+    @staticmethod
+    def _format_selected_interests(selected: list[dict[str, Any]]) -> str:
+        return ", ".join(str(item["name"]).strip() for item in selected)
+
+    async def _load_interests_catalog(self) -> list[dict[str, Any]]:
+        status_code, interests_payload = await api_client.list_interests()
+        if status_code != 200 or not isinstance(interests_payload, list):
+            return []
+        valid_items = [item for item in interests_payload if item.get("id") is not None]
+        return sorted(valid_items, key=lambda item: str(item.get("name", "")).lower())
+
+    async def _ask_interests_selection(self, message: Message, state: FSMContext) -> bool:
+        interests_catalog = await self._load_interests_catalog()
+        if not interests_catalog:
+            await message.answer(
+                "Не удалось загрузить интересы. Попробуй позже.",
+                reply_markup=main_menu_keyboard(),
+            )
+            await state.clear()
+            return False
+
+        await state.update_data(interests_catalog=interests_catalog, selected_interest_ids=[])
+        await message.answer(
+            "Выберите интересы (0/3)",
+            reply_markup=interests_selection_keyboard(interests_catalog, set()),
+        )
+        return True
+
+    async def _sync_interests_with_backend(self, telegram_id: int, raw_interests: str | None) -> None:
+        if raw_interests is None:
+            return
+
+        normalized = [part.strip().lower() for part in raw_interests.split(",") if part.strip()]
+        status_code, interests_payload = await api_client.list_interests()
+        if status_code != 200 or not isinstance(interests_payload, list):
+            return
+
+        catalog = {
+            str(item.get("name", "")).strip().lower(): int(item.get("id"))
+            for item in interests_payload
+            if item.get("id") is not None
+        }
+
+        if not normalized:
+            await api_client.update_profile_interests(telegram_id=telegram_id, interest_ids=[])
+            return
+
+        seen: set[int] = set()
+        interest_ids: list[int] = []
+        for name in normalized:
+            interest_id = catalog.get(name)
+            if interest_id is None or interest_id in seen:
+                continue
+            seen.add(interest_id)
+            interest_ids.append(interest_id)
+
+        if not interest_ids:
+            return
+
+        await api_client.update_profile_interests(telegram_id=telegram_id, interest_ids=interest_ids)
+
     async def upload_profile_photo(
         self, telegram_id: int, payload: bytes
     ) -> tuple[int, dict[str, Any]]:
@@ -75,13 +137,127 @@ class ProfileService:
     async def handle_create_profile_bio(self, message: Message, state: FSMContext) -> None:
         await state.update_data(bio=(message.text or "").strip())
         await state.set_state(CreateProfileState.interests)
-        await message.answer("Напиши свои интересы:")
+        await self._ask_interests_selection(message, state)
 
     async def handle_create_profile_interests(self, message: Message, state: FSMContext) -> None:
-        await state.update_data(interests=(message.text or "").strip())
-        await state.set_state(CreateProfileState.photo)
-        awaiting_photo_upload[message.from_user.id] = {"purpose": "create_profile"}
-        await message.answer("Отправь фото для анкеты")
+        await message.answer("Выбирай интересы кнопками ниже.")
+
+    async def handle_interest_callback(self, callback: CallbackQuery, state: FSMContext) -> None:
+        if not callback.data:
+            return
+
+        current_state = await state.get_state()
+        data = await state.get_data()
+        is_create_interests_step = current_state == CreateProfileState.interests.state
+        is_update_interests_step = (
+            current_state == UpdateProfileState.value.state
+            and data.get("current_field") == "interests"
+        )
+
+        if not is_create_interests_step and not is_update_interests_step:
+            await callback.answer("Сейчас выбор интересов недоступен", show_alert=True)
+            return
+
+        parts = callback.data.split(":")
+        if len(parts) < 2:
+            await callback.answer()
+            return
+
+        action = parts[1]
+        interests_catalog = data.get("interests_catalog")
+        if not isinstance(interests_catalog, list) or not interests_catalog:
+            interests_catalog = await self._load_interests_catalog()
+            await state.update_data(interests_catalog=interests_catalog)
+        if not interests_catalog:
+            await callback.answer("Не удалось загрузить интересы", show_alert=True)
+            return
+
+        selected_ids_raw = data.get("selected_interest_ids", [])
+        selected_ids: list[int] = [int(item) for item in selected_ids_raw]
+
+        if action == "select":
+            if len(parts) != 3:
+                await callback.answer()
+                return
+
+            interest_id = int(parts[2])
+            if interest_id in selected_ids:
+                await callback.answer("Этот интерес уже выбран")
+                return
+            if len(selected_ids) >= 3:
+                await callback.answer("Уже выбрано 3 интереса")
+                return
+
+            selected_ids.append(interest_id)
+            await state.update_data(selected_interest_ids=selected_ids)
+            await callback.answer("Добавлено")
+
+            selected_set = set(selected_ids)
+            await callback.message.edit_text(
+                f"Выберите интересы ({len(selected_ids)}/3)",
+                reply_markup=interests_selection_keyboard(interests_catalog, selected_set),
+            )
+
+            if len(selected_ids) == 3:
+                selected_items = [
+                    item for item in interests_catalog if int(item.get("id", 0)) in selected_set
+                ]
+                selected_text = self._format_selected_interests(selected_items)
+                await callback.message.answer(
+                    "Поле заполнено.\n"
+                    f"Выбранные интересы: {selected_text}",
+                    reply_markup=interests_confirm_keyboard(),
+                )
+            return
+
+        if action == "reset":
+            await state.update_data(selected_interest_ids=[])
+            await callback.answer("Список очищен")
+            await callback.message.answer(
+                "Выберите интересы (0/3)",
+                reply_markup=interests_selection_keyboard(interests_catalog, set()),
+            )
+            return
+
+        if action != "confirm":
+            await callback.answer()
+            return
+
+        if len(selected_ids) != 3:
+            await callback.answer("Нужно выбрать ровно 3 интереса", show_alert=True)
+            return
+
+        selected_set = set(selected_ids)
+        selected_items = [item for item in interests_catalog if int(item.get("id", 0)) in selected_set]
+        selected_text = self._format_selected_interests(selected_items)
+        await state.update_data(interests=selected_text)
+        await callback.answer("Сохранено")
+
+        if is_create_interests_step:
+            await state.set_state(CreateProfileState.photo)
+            awaiting_photo_upload[callback.from_user.id] = {"purpose": "create_profile"}
+            await callback.message.answer("Отправь фото для анкеты")
+            return
+
+        status_code, response = await api_client.update_profile(
+            telegram_id=callback.from_user.id,
+            payload={"interests": selected_text},
+        )
+        if status_code != 200:
+            await state.clear()
+            await callback.message.answer(
+                extract_error_message(response),
+                reply_markup=main_menu_keyboard(),
+            )
+            return
+
+        await self._sync_interests_with_backend(
+            telegram_id=callback.from_user.id,
+            raw_interests=selected_text,
+        )
+        await state.clear()
+        await callback.message.answer("Поле обновлено.", reply_markup=main_menu_keyboard())
+        await self._send_updated_profile_after_change(callback.message, callback.from_user.id)
 
     async def handle_waiting_profile_photo_invalid(self, message: Message) -> None:
         await message.answer("Нужно отправить фото (как изображение, не файлом).")
@@ -117,9 +293,23 @@ class ProfileService:
             await message.answer(extract_error_message(response), reply_markup=main_menu_keyboard())
             return
 
+        if field == "interests":
+            await self._sync_interests_with_backend(telegram_id=telegram_id, raw_interests=text)
+
         await state.clear()
         await message.answer("Поле обновлено.", reply_markup=main_menu_keyboard())
         await self._send_updated_profile_after_change(message, telegram_id)
+
+    async def handle_edit_cancel_message(self, message: Message, state: FSMContext) -> None:
+        telegram_id = message.from_user.id
+        current_state = await state.get_state()
+        has_update_photo_session = awaiting_photo_upload.get(telegram_id, {}).get("purpose") == "update_photo"
+        if current_state != UpdateProfileState.value.state and not has_update_photo_session:
+            return
+
+        awaiting_photo_upload.pop(telegram_id, None)
+        await state.clear()
+        await message.answer("Изменение поля отменено.", reply_markup=main_menu_keyboard())
 
     async def handle_photo_upload(self, message: Message, state: FSMContext) -> None:
         telegram_id = message.from_user.id
@@ -154,6 +344,11 @@ class ProfileService:
                     extract_error_message(response), reply_markup=no_profile_menu_keyboard()
                 )
                 return
+
+            await self._sync_interests_with_backend(
+                telegram_id=telegram_id,
+                raw_interests=data.get("interests"),
+            )
 
             await self.upload_profile_photo(telegram_id=telegram_id, payload=payload)
             awaiting_photo_upload.pop(telegram_id, None)
@@ -251,7 +446,7 @@ class ProfileService:
             awaiting_photo_upload[telegram_id] = {"purpose": "update_photo"}
             await callback.answer("Ок")
             await callback.message.answer(
-                "Отправь новое фото для анкеты", reply_markup=cancel_edit_keyboard()
+                "Отправь новое фото для анкеты", reply_markup=edit_cancel_menu_keyboard()
             )
             return
 
@@ -262,14 +457,29 @@ class ProfileService:
 
         prompts = {
             "gender": ("Выбери новый пол:", edit_gender_with_cancel_keyboard()),
-            "interests": ("Введи новый интерес:", cancel_edit_keyboard()),
-            "name": ("Введи новое имя:", cancel_edit_keyboard()),
-            "age": ("Введи новый возраст:", cancel_edit_keyboard()),
-            "city": ("Введи новый город:", cancel_edit_keyboard()),
-            "bio": ("Введи новое описание:", cancel_edit_keyboard()),
+            "interests": ("Выбери интересы (0/3):", edit_cancel_menu_keyboard()),
+            "name": ("Введи новое имя:", edit_cancel_menu_keyboard()),
+            "age": ("Введи новый возраст:", edit_cancel_menu_keyboard()),
+            "city": ("Введи новый город:", edit_cancel_menu_keyboard()),
+            "bio": ("Введи новое описание:", edit_cancel_menu_keyboard()),
         }
-        text, markup = prompts.get(field, ("Введи новое значение:", cancel_edit_keyboard()))
+        text, markup = prompts.get(field, ("Введи новое значение:", edit_cancel_menu_keyboard()))
         await callback.message.answer(text, reply_markup=markup)
+
+        if field == "interests":
+            interests_catalog = await self._load_interests_catalog()
+            if not interests_catalog:
+                await state.clear()
+                await callback.message.answer(
+                    "Не удалось загрузить интересы. Попробуй позже.",
+                    reply_markup=main_menu_keyboard(),
+                )
+                return
+            await state.update_data(interests_catalog=interests_catalog, selected_interest_ids=[])
+            await callback.message.answer(
+                "Выберите интересы (0/3)",
+                reply_markup=interests_selection_keyboard(interests_catalog, set()),
+            )
 
 
 profile_service = ProfileService()

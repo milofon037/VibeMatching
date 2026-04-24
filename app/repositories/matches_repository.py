@@ -1,4 +1,6 @@
-from sqlalchemy import or_, select
+from datetime import datetime
+
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.match import Match
@@ -44,3 +46,11 @@ class MatchesRepository:
         await self.session.flush()
         await self.session.refresh(match)
         return match
+
+    async def count_recent_for_user(self, user_id: int, since: datetime) -> int:
+        query = select(func.count(Match.id)).where(
+            or_(Match.user1_id == user_id, Match.user2_id == user_id),
+            Match.created_at >= since,
+        )
+        result = await self.session.execute(query)
+        return int(result.scalar_one() or 0)

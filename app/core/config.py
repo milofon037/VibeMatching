@@ -37,6 +37,14 @@ class Settings(BaseSettings):
     photo_allowed_content_types_raw: str = Field(alias="PHOTO_ALLOWED_CONTENT_TYPES")
     photo_allowed_extensions_raw: str = Field(alias="PHOTO_ALLOWED_EXTENSIONS")
     feed_batch_size: int = Field(alias="FEED_BATCH_SIZE")
+    ranking_service_enabled: bool = Field(default=False, alias="RANKING_SERVICE_ENABLED")
+    ranking_service_url: str = Field(default="http://localhost:8010", alias="RANKING_SERVICE_URL")
+    ranking_service_timeout_seconds: float = Field(
+        default=1.5, alias="RANKING_SERVICE_TIMEOUT_SECONDS"
+    )
+    feed_cache_enabled: bool = Field(default=True, alias="FEED_CACHE_ENABLED")
+    feed_cache_batch_size: int = Field(default=10, alias="FEED_CACHE_BATCH_SIZE")
+    feed_cache_ttl_seconds: int = Field(default=900, alias="FEED_CACHE_TTL_SECONDS")
 
     @property
     def database_url(self) -> str:

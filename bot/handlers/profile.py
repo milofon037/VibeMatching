@@ -28,9 +28,19 @@ async def create_profile_bio(message: Message, state: FSMContext) -> None:
     await profile_service.handle_create_profile_bio(message, state)
 
 
-@router.message(CreateProfileState.interests, F.text)
+@router.message(CreateProfileState.interests)
 async def create_profile_interests(message: Message, state: FSMContext) -> None:
     await profile_service.handle_create_profile_interests(message, state)
+
+
+@router.callback_query(F.data.startswith("interest:"))
+async def on_interest_callback(callback: CallbackQuery, state: FSMContext) -> None:
+    await profile_service.handle_interest_callback(callback, state)
+
+
+@router.message(F.text == "Отменить изменение")
+async def cancel_profile_edit(message: Message, state: FSMContext) -> None:
+    await profile_service.handle_edit_cancel_message(message, state)
 
 
 @router.message(UpdateProfileState.value)

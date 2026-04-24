@@ -111,3 +111,38 @@ def my_profile_edit_keyboard() -> InlineKeyboardMarkup:
             [InlineKeyboardButton(text="Изменить фото", callback_data="edit:photo")],
         ]
     )
+
+
+def interests_selection_keyboard(
+    interests: list[dict[str, int | str]], selected_ids: set[int]
+) -> InlineKeyboardMarkup:
+    rows: list[list[InlineKeyboardButton]] = []
+    row: list[InlineKeyboardButton] = []
+
+    for interest in interests:
+        interest_id = int(interest["id"])
+        name = str(interest["name"])
+        marker = "✅ " if interest_id in selected_ids else ""
+        row.append(
+            InlineKeyboardButton(
+                text=f"{marker}{name}",
+                callback_data=f"interest:select:{interest_id}",
+            )
+        )
+        if len(row) == 2:
+            rows.append(row)
+            row = []
+
+    if row:
+        rows.append(row)
+
+    return InlineKeyboardMarkup(inline_keyboard=rows)
+
+
+def interests_confirm_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="Подтвердить", callback_data="interest:confirm")],
+            [InlineKeyboardButton(text="Заполнить еще раз", callback_data="interest:reset")],
+        ]
+    )

@@ -1,4 +1,16 @@
 services:
+  ranking:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vibematching-ranking
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: poetry run uvicorn ranking_service.main:app --host 0.0.0.0 --port 8010
+    ports:
+      - "8010:8010"
+
   bot:
     build:
       context: .
@@ -11,6 +23,8 @@ services:
       BOT_BACKEND_URL: http://backend:8000/api/v1
     depends_on:
       backend:
+        condition: service_started
+      ranking:
         condition: service_started
     command: poetry run python -m bot.main
 
@@ -30,6 +44,8 @@ services:
       RABBITMQ_HOST: ${RABBITMQ_DOCKER_HOST}
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       MINIO_ENDPOINT: ${MINIO_DOCKER_HOST}:${MINIO_API_PORT}
+      RANKING_SERVICE_ENABLED: "true"
+      RANKING_SERVICE_URL: http://ranking:8010
     depends_on:
       postgres:
         condition: service_healthy

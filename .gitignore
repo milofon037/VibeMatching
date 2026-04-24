@@ -11,3 +11,4 @@ htmlcov/
 .env
 
 alembic/versions/*.pyc
+practices

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 from app.models.enums import Gender, SearchCityMode
+from app.models.profile_interest import profile_interests  # noqa: F401
 
 
 class Profile(Base):
@@ -48,3 +49,9 @@ class Profile(Base):
 
     user = relationship("User", back_populates="profile")
     photos = relationship("Photo", back_populates="profile", cascade="all, delete-orphan")
+    interests_catalog = relationship(
+        "Interest",
+        secondary="profile_interests",
+        back_populates="profiles",
+        lazy="selectin",
+    )
