@@ -9,10 +9,10 @@ from starlette import status
 from app.core.config import settings
 from app.core.errors import APIError
 from app.core.minio_client import MinioStorage
+from app.repositories.matches_repository import MatchesRepository
 from app.repositories.photos_repository import PhotosRepository
 from app.repositories.profiles_repository import ProfilesRepository
 from app.repositories.ratings_repository import RatingsRepository
-from app.repositories.matches_repository import MatchesRepository
 from app.repositories.swipes_repository import SwipesRepository
 from app.repositories.users_repository import UsersRepository
 from app.services.base_rank_service import BaseRankService
