@@ -1,4 +1,6 @@
-from sqlalchemy import desc, select
+from datetime import datetime
+
+from sqlalchemy import case, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 
@@ -81,3 +83,25 @@ class SwipesRepository:
         )
         result = await self.session.execute(query)
         return list(result.scalars().all())
+
+    async def get_received_likes_and_skips_count_since(
+        self,
+        profile_id: int,
+        since: datetime,
+    ) -> tuple[int, int]:
+        query = select(
+            func.coalesce(
+                func.sum(case((Swipe.action == SwipeAction.LIKE, 1), else_=0)),
+                0,
+            ),
+            func.coalesce(
+                func.sum(case((Swipe.action == SwipeAction.SKIP, 1), else_=0)),
+                0,
+            ),
+        ).where(
+            Swipe.to_profile_id == profile_id,
+            Swipe.created_at >= since,
+        )
+        result = await self.session.execute(query)
+        likes_count, skips_count = result.one()
+        return int(likes_count), int(skips_count)

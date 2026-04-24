@@ -22,6 +22,20 @@ class ProfilesRepository:
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
+    async def get_by_ids(self, profile_ids: list[int]) -> list[Profile]:
+        if not profile_ids:
+            return []
+
+        query = (
+            select(Profile)
+            .options(selectinload(Profile.interests_catalog))
+            .where(Profile.id.in_(profile_ids))
+        )
+        result = await self.session.execute(query)
+        profiles = list(result.scalars().all())
+        profile_by_id = {profile.id: profile for profile in profiles}
+        return [profile_by_id[profile_id] for profile_id in profile_ids if profile_id in profile_by_id]
+
     async def create_profile(self, user_id: int, **profile_data) -> Profile:
         profile = Profile(user_id=user_id, **profile_data)
         self.session.add(profile)

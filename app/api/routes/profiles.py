@@ -6,10 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies.auth import resolve_telegram_id
 from app.core.config import settings
 from app.core.database import get_db_session
+from app.core.redis_client import get_redis_client
 from app.repositories.interests_repository import InterestsRepository
+from app.repositories.matches_repository import MatchesRepository
 from app.repositories.photos_repository import PhotosRepository
 from app.repositories.profiles_repository import ProfilesRepository
 from app.repositories.ratings_repository import RatingsRepository
+from app.repositories.swipes_repository import SwipesRepository
 from app.repositories.users_repository import UsersRepository
 from app.schemas.interests import ProfileInterestsUpdateRequest
 from app.schemas.profiles import (
@@ -19,6 +22,7 @@ from app.schemas.profiles import (
     ProfileUpdateRequest,
 )
 from app.services.events_service import LikeEventHandler
+from app.services.feed_cache_service import FeedCacheService
 from app.services.interests_service import InterestsService
 from app.services.profiles_service import ProfilesService
 from app.services.ranking_client import RankingServiceClient
@@ -43,6 +47,12 @@ async def create_profile(
         ),
         photos_repository=PhotosRepository(session=session),
         event_handler=LikeEventHandler(),
+        feed_cache_service=FeedCacheService(
+            redis_client=get_redis_client(),
+            ttl_seconds=settings.feed_cache_ttl_seconds,
+        ),
+        swipes_repository=SwipesRepository(session=session),
+        matches_repository=MatchesRepository(session=session),
     )
     profile = await service.create_profile(
         telegram_id=telegram_id, profile_data=payload.model_dump()
@@ -66,6 +76,12 @@ async def get_my_profile(
         ),
         photos_repository=PhotosRepository(session=session),
         event_handler=LikeEventHandler(),
+        feed_cache_service=FeedCacheService(
+            redis_client=get_redis_client(),
+            ttl_seconds=settings.feed_cache_ttl_seconds,
+        ),
+        swipes_repository=SwipesRepository(session=session),
+        matches_repository=MatchesRepository(session=session),
     )
     profile = await service.get_my_profile(telegram_id=telegram_id)
     return ProfileResponse.model_validate(profile)
@@ -88,6 +104,12 @@ async def update_profile(
         ),
         photos_repository=PhotosRepository(session=session),
         event_handler=LikeEventHandler(),
+        feed_cache_service=FeedCacheService(
+            redis_client=get_redis_client(),
+            ttl_seconds=settings.feed_cache_ttl_seconds,
+        ),
+        swipes_repository=SwipesRepository(session=session),
+        matches_repository=MatchesRepository(session=session),
     )
     profile = await service.update_profile(
         telegram_id=telegram_id,
@@ -113,6 +135,12 @@ async def update_search_mode(
         ),
         photos_repository=PhotosRepository(session=session),
         event_handler=LikeEventHandler(),
+        feed_cache_service=FeedCacheService(
+            redis_client=get_redis_client(),
+            ttl_seconds=settings.feed_cache_ttl_seconds,
+        ),
+        swipes_repository=SwipesRepository(session=session),
+        matches_repository=MatchesRepository(session=session),
     )
     profile = await service.update_search_mode(
         telegram_id=telegram_id,
@@ -138,6 +166,12 @@ async def get_feed(
         ),
         photos_repository=PhotosRepository(session=session),
         event_handler=LikeEventHandler(),
+        feed_cache_service=FeedCacheService(
+            redis_client=get_redis_client(),
+            ttl_seconds=settings.feed_cache_ttl_seconds,
+        ),
+        swipes_repository=SwipesRepository(session=session),
+        matches_repository=MatchesRepository(session=session),
     )
     profiles = await service.get_feed(telegram_id=telegram_id, limit=limit)
     return [ProfileResponse.model_validate(profile) for profile in profiles]

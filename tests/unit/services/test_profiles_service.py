@@ -242,6 +242,7 @@ class TestProfilesService:
         users_repository = AsyncMock()
         ratings_repository = AsyncMock()
         ranking_client = AsyncMock()
+        feed_cache_service = AsyncMock()
         session = AsyncMock()
 
         users_repository.get_by_telegram_id.return_value = user
@@ -250,6 +251,7 @@ class TestProfilesService:
         profiles_repository.get_viewed_profile_ids.return_value = []
         ratings_repository.get_base_ranks_by_user_ids.return_value = {2: 0.4, 3: 0.9}
         ranking_client.rank_feed.return_value = [22, 11]
+        feed_cache_service.get_cached_profile_ids.return_value = []
 
         service = ProfilesService(
             profiles_repository=profiles_repository,
@@ -257,14 +259,18 @@ class TestProfilesService:
             session=session,
             ratings_repository=ratings_repository,
             ranking_client=ranking_client,
+            feed_cache_service=feed_cache_service,
         )
 
         monkeypatch.setattr(settings, "ranking_service_enabled", True)
+        monkeypatch.setattr(settings, "feed_cache_enabled", True)
+        monkeypatch.setattr(settings, "feed_cache_batch_size", 10)
 
         result = await service.get_feed(telegram_id=telegram_id, limit=2)
 
         assert [item.id for item in result] == [22, 11]
         ranking_client.rank_feed.assert_called_once()
+        feed_cache_service.replace_cache.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_get_feed_fallbacks_to_sql_when_ranking_unavailable(self, monkeypatch):
@@ -279,6 +285,7 @@ class TestProfilesService:
         users_repository = AsyncMock()
         ratings_repository = AsyncMock()
         ranking_client = AsyncMock()
+        feed_cache_service = AsyncMock()
         session = AsyncMock()
 
         users_repository.get_by_telegram_id.return_value = user
@@ -287,6 +294,7 @@ class TestProfilesService:
         profiles_repository.get_viewed_profile_ids.return_value = []
         ratings_repository.get_base_ranks_by_user_ids.return_value = {2: 0.4, 3: 0.9}
         ranking_client.rank_feed.side_effect = RankingServiceUnavailable("request_failed")
+        feed_cache_service.get_cached_profile_ids.return_value = []
 
         service = ProfilesService(
             profiles_repository=profiles_repository,
@@ -294,10 +302,93 @@ class TestProfilesService:
             session=session,
             ratings_repository=ratings_repository,
             ranking_client=ranking_client,
+            feed_cache_service=feed_cache_service,
         )
 
         monkeypatch.setattr(settings, "ranking_service_enabled", True)
+        monkeypatch.setattr(settings, "feed_cache_enabled", True)
+        monkeypatch.setattr(settings, "feed_cache_batch_size", 10)
 
         result = await service.get_feed(telegram_id=telegram_id, limit=2)
 
         assert [item.id for item in result] == [11, 22]
+
+    @pytest.mark.asyncio
+    async def test_get_feed_uses_redis_cache_hit(self, monkeypatch):
+        """Feed should return cached queue when enough cached ids are available."""
+        telegram_id = 123456789
+        user = MagicMock(id=1)
+        my_profile = MagicMock(id=100, user_id=1, interests_catalog=[])
+        cached_profile_1 = MagicMock(id=11, user_id=2, interests_catalog=[])
+        cached_profile_2 = MagicMock(id=22, user_id=3, interests_catalog=[])
+
+        profiles_repository = AsyncMock()
+        users_repository = AsyncMock()
+        feed_cache_service = AsyncMock()
+        session = AsyncMock()
+
+        users_repository.get_by_telegram_id.return_value = user
+        profiles_repository.get_by_user_id.return_value = my_profile
+        profiles_repository.get_by_ids.return_value = [cached_profile_1, cached_profile_2]
+        feed_cache_service.get_cached_profile_ids.return_value = [11, 22]
+
+        service = ProfilesService(
+            profiles_repository=profiles_repository,
+            users_repository=users_repository,
+            session=session,
+            feed_cache_service=feed_cache_service,
+        )
+
+        monkeypatch.setattr(settings, "feed_cache_enabled", True)
+
+        result = await service.get_feed(telegram_id=telegram_id, limit=2)
+
+        assert [item.id for item in result] == [11, 22]
+        feed_cache_service.consume.assert_called_once_with(user_id=1, count=2)
+        profiles_repository.get_feed_profiles.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_get_feed_refills_cache_with_next_batch(self, monkeypatch):
+        """Feed should cache the next 10 ranked profiles after responding."""
+        telegram_id = 123456789
+        user = MagicMock(id=1)
+        my_profile = MagicMock(id=100, user_id=1, interests_catalog=[])
+        candidates = [MagicMock(id=index, user_id=100 + index, interests_catalog=[]) for index in range(1, 13)]
+
+        profiles_repository = AsyncMock()
+        users_repository = AsyncMock()
+        ranking_client = AsyncMock()
+        ratings_repository = AsyncMock()
+        feed_cache_service = AsyncMock()
+        session = AsyncMock()
+
+        users_repository.get_by_telegram_id.return_value = user
+        profiles_repository.get_by_user_id.return_value = my_profile
+        profiles_repository.get_feed_profiles.return_value = candidates
+        profiles_repository.get_viewed_profile_ids.return_value = []
+        ratings_repository.get_base_ranks_by_user_ids.return_value = {
+            candidate.user_id: 0.5 for candidate in candidates
+        }
+        ranking_client.rank_feed.return_value = [candidate.id for candidate in candidates]
+        feed_cache_service.get_cached_profile_ids.return_value = []
+
+        service = ProfilesService(
+            profiles_repository=profiles_repository,
+            users_repository=users_repository,
+            session=session,
+            ratings_repository=ratings_repository,
+            ranking_client=ranking_client,
+            feed_cache_service=feed_cache_service,
+        )
+
+        monkeypatch.setattr(settings, "ranking_service_enabled", True)
+        monkeypatch.setattr(settings, "feed_cache_enabled", True)
+        monkeypatch.setattr(settings, "feed_cache_batch_size", 10)
+
+        result = await service.get_feed(telegram_id=telegram_id, limit=2)
+
+        assert [item.id for item in result] == [1, 2]
+        feed_cache_service.replace_cache.assert_called_once_with(
+            user_id=1,
+            profile_ids=[3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        )

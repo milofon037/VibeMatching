@@ -10,6 +10,8 @@ from app.core.minio_client import MinioStorage
 from app.repositories.photos_repository import PhotosRepository
 from app.repositories.profiles_repository import ProfilesRepository
 from app.repositories.ratings_repository import RatingsRepository
+from app.repositories.matches_repository import MatchesRepository
+from app.repositories.swipes_repository import SwipesRepository
 from app.repositories.users_repository import UsersRepository
 from app.schemas.photos import PhotoDeleteResponse, PhotoResponse, PhotoUploadResponse
 from app.services.events_service import LikeEventHandler
@@ -33,6 +35,8 @@ async def upload_photo(
         session=session,
         ratings_repository=RatingsRepository(session=session),
         event_handler=LikeEventHandler(),
+        swipes_repository=SwipesRepository(session=session),
+        matches_repository=MatchesRepository(session=session),
     )
     photo = await service.upload_photo(
         telegram_id=telegram_id, file=file, requested_position=position
@@ -53,6 +57,8 @@ async def get_my_photos(
         session=session,
         ratings_repository=RatingsRepository(session=session),
         event_handler=LikeEventHandler(),
+        swipes_repository=SwipesRepository(session=session),
+        matches_repository=MatchesRepository(session=session),
     )
     photos = await service.get_my_photos(telegram_id=telegram_id)
     return [PhotoResponse.model_validate(photo) for photo in photos]
@@ -71,6 +77,8 @@ async def get_profile_photos(
         session=session,
         ratings_repository=RatingsRepository(session=session),
         event_handler=LikeEventHandler(),
+        swipes_repository=SwipesRepository(session=session),
+        matches_repository=MatchesRepository(session=session),
     )
     photos = await service.get_profile_photos(profile_id=profile_id)
     return [PhotoResponse.model_validate(photo) for photo in photos]
@@ -89,6 +97,8 @@ async def get_profile_primary_photo_raw(
         session=session,
         ratings_repository=RatingsRepository(session=session),
         event_handler=LikeEventHandler(),
+        swipes_repository=SwipesRepository(session=session),
+        matches_repository=MatchesRepository(session=session),
     )
     photo_data = await service.get_primary_photo_bytes(profile_id=profile_id)
     if photo_data is None:
@@ -111,6 +121,8 @@ async def get_photo(
         session=session,
         ratings_repository=RatingsRepository(session=session),
         event_handler=LikeEventHandler(),
+        swipes_repository=SwipesRepository(session=session),
+        matches_repository=MatchesRepository(session=session),
     )
     photo = await service.get_photo_by_id(photo_id=photo_id)
     return PhotoResponse.model_validate(photo)
@@ -130,6 +142,8 @@ async def set_main_photo(
         session=session,
         ratings_repository=RatingsRepository(session=session),
         event_handler=LikeEventHandler(),
+        swipes_repository=SwipesRepository(session=session),
+        matches_repository=MatchesRepository(session=session),
     )
     photo = await service.set_main_photo(telegram_id=telegram_id, photo_id=photo_id)
     return PhotoResponse.model_validate(photo)
@@ -149,6 +163,8 @@ async def delete_photo(
         session=session,
         ratings_repository=RatingsRepository(session=session),
         event_handler=LikeEventHandler(),
+        swipes_repository=SwipesRepository(session=session),
+        matches_repository=MatchesRepository(session=session),
     )
     await service.delete_photo(telegram_id=telegram_id, photo_id=photo_id)
     return PhotoDeleteResponse(photo_id=photo_id)

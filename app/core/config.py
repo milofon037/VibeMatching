@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     ranking_service_timeout_seconds: float = Field(
         default=1.5, alias="RANKING_SERVICE_TIMEOUT_SECONDS"
     )
+    feed_cache_enabled: bool = Field(default=True, alias="FEED_CACHE_ENABLED")
+    feed_cache_batch_size: int = Field(default=10, alias="FEED_CACHE_BATCH_SIZE")
+    feed_cache_ttl_seconds: int = Field(default=900, alias="FEED_CACHE_TTL_SECONDS")
 
     @property
     def database_url(self) -> str:

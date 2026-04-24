@@ -6,6 +6,8 @@ from app.core.errors import APIError
 from app.repositories.photos_repository import PhotosRepository
 from app.repositories.profiles_repository import ProfilesRepository
 from app.repositories.ratings_repository import RatingsRepository
+from app.repositories.matches_repository import MatchesRepository
+from app.repositories.swipes_repository import SwipesRepository
 from app.repositories.users_repository import UsersRepository
 from app.services.base_rank_service import BaseRankService
 from app.services.events_service import LikeEventHandler
@@ -20,6 +22,8 @@ class UsersService:
         photos_repository: PhotosRepository | None = None,
         ratings_repository: RatingsRepository | None = None,
         event_handler: LikeEventHandler | None = None,
+        swipes_repository: SwipesRepository | None = None,
+        matches_repository: MatchesRepository | None = None,
     ) -> None:
         self.repository = repository
         self.session = session
@@ -27,6 +31,8 @@ class UsersService:
         self.photos_repository = photos_repository
         self.ratings_repository = ratings_repository
         self.event_handler = event_handler
+        self.swipes_repository = swipes_repository
+        self.matches_repository = matches_repository
 
     async def _recalculate_base_rank_if_possible(self, user_id: int) -> None:
         if (
@@ -43,6 +49,8 @@ class UsersService:
             photos_repository=self.photos_repository,
             ratings_repository=self.ratings_repository,
             event_handler=self.event_handler,
+            swipes_repository=self.swipes_repository,
+            matches_repository=self.matches_repository,
         )
         await service.recalculate_for_user(user_id=user_id)
 
