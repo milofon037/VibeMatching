@@ -1,0 +1,143 @@
+[
+  {
+    "config": "Read-Heavy (80% read / 20% write)",
+    "strategies": [
+      {
+        "strategy": "Lazy Loading (Cache-Aside)",
+        "read_ratio": "80%",
+        "operations": 1000,
+        "elapsed_time": "0.733s",
+        "throughput": "1363.61 req/sec",
+        "avg_read_time": "0.02ms",
+        "avg_write_time": "3.61ms",
+        "cache_hits": 503,
+        "cache_misses": 300,
+        "hit_rate": "62.64%",
+        "db_reads": 300,
+        "db_writes": 197
+      },
+      {
+        "strategy": "Write-Through",
+        "read_ratio": "80%",
+        "operations": 1000,
+        "elapsed_time": "0.669s",
+        "throughput": "1495.78 req/sec",
+        "avg_read_time": "0.01ms",
+        "avg_write_time": "3.43ms",
+        "cache_hits": 641,
+        "cache_misses": 168,
+        "hit_rate": "79.23%",
+        "db_reads": 168,
+        "db_writes": 191
+      },
+      {
+        "strategy": "Write-Back (Write-Behind)",
+        "read_ratio": "80%",
+        "operations": 1000,
+        "elapsed_time": "0.015s",
+        "throughput": "67776.87 req/sec",
+        "avg_read_time": "0.02ms",
+        "avg_write_time": "0.00ms",
+        "cache_hits": 627,
+        "cache_misses": 171,
+        "hit_rate": "78.57%",
+        "db_reads": 171,
+        "db_writes": 0
+      }
+    ]
+  },
+  {
+    "config": "Balanced (50% read / 50% write)",
+    "strategies": [
+      {
+        "strategy": "Lazy Loading (Cache-Aside)",
+        "read_ratio": "50%",
+        "operations": 1000,
+        "elapsed_time": "2.019s",
+        "throughput": "495.31 req/sec",
+        "avg_read_time": "0.02ms",
+        "avg_write_time": "3.98ms",
+        "cache_hits": 392,
+        "cache_misses": 105,
+        "hit_rate": "78.87%",
+        "db_reads": 105,
+        "db_writes": 503
+      },
+      {
+        "strategy": "Write-Through",
+        "read_ratio": "50%",
+        "operations": 1000,
+        "elapsed_time": "2.559s",
+        "throughput": "390.82 req/sec",
+        "avg_read_time": "0.01ms",
+        "avg_write_time": "4.86ms",
+        "cache_hits": 432,
+        "cache_misses": 44,
+        "hit_rate": "90.76%",
+        "db_reads": 44,
+        "db_writes": 524
+      },
+      {
+        "strategy": "Write-Back (Write-Behind)",
+        "read_ratio": "50%",
+        "operations": 1000,
+        "elapsed_time": "0.002s",
+        "throughput": "625548.70 req/sec",
+        "avg_read_time": "0.00ms",
+        "avg_write_time": "0.00ms",
+        "cache_hits": 450,
+        "cache_misses": 64,
+        "hit_rate": "87.55%",
+        "db_reads": 64,
+        "db_writes": 0
+      }
+    ]
+  },
+  {
+    "config": "Write-Heavy (20% read / 80% write)",
+    "strategies": [
+      {
+        "strategy": "Lazy Loading (Cache-Aside)",
+        "read_ratio": "20%",
+        "operations": 1000,
+        "elapsed_time": "2.612s",
+        "throughput": "382.85 req/sec",
+        "avg_read_time": "0.02ms",
+        "avg_write_time": "3.30ms",
+        "cache_hits": 153,
+        "cache_misses": 59,
+        "hit_rate": "72.17%",
+        "db_reads": 59,
+        "db_writes": 788
+      },
+      {
+        "strategy": "Write-Through",
+        "read_ratio": "20%",
+        "operations": 1000,
+        "elapsed_time": "2.680s",
+        "throughput": "373.09 req/sec",
+        "avg_read_time": "0.01ms",
+        "avg_write_time": "3.31ms",
+        "cache_hits": 183,
+        "cache_misses": 11,
+        "hit_rate": "94.33%",
+        "db_reads": 11,
+        "db_writes": 806
+      },
+      {
+        "strategy": "Write-Back (Write-Behind)",
+        "read_ratio": "20%",
+        "operations": 1000,
+        "elapsed_time": "0.001s",
+        "throughput": "687478.12 req/sec",
+        "avg_read_time": "0.00ms",
+        "avg_write_time": "0.00ms",
+        "cache_hits": 191,
+        "cache_misses": 9,
+        "hit_rate": "95.50%",
+        "db_reads": 9,
+        "db_writes": 0
+      }
+    ]
+  }
+]
