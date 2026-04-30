@@ -5,8 +5,35 @@ import os
 import json
 import tempfile
 from datetime import datetime
+from pathlib import Path
+import socket
+import time
+
+# Load .env file FIRST before importing cache_strategies
+env_file = Path(__file__).parent / '.env'
+if env_file.exists():
+    with open(env_file) as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                key, value = line.split('=', 1)
+                os.environ[key.strip()] = value.strip()
+
 from cache_strategies import LazyLoadingCacheStrategy, WriteThroughCacheStrategy, WriteBackCacheStrategy
 from load_generator import run_test
+
+
+def wait_for_tcp(host: str, port: int, timeout: int = 30):
+    """Ожидание появления доступного TCP сервиса"""
+    start = time.time()
+    while True:
+        try:
+            with socket.create_connection((host, port), timeout=1):
+                return True
+        except Exception:
+            if time.time() - start > timeout:
+                raise
+            time.sleep(0.5)
 
 
 def save_raw_results(results, filename='test_metrics.json'):
@@ -109,28 +136,19 @@ def run_all_tests():
         }
         
         # Lazy Loading
-        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
-            db_path = f.name
-        cache = LazyLoadingCacheStrategy(db_path=db_path)
+        cache = LazyLoadingCacheStrategy()
         result = run_test("Lazy Loading (Cache-Aside)", cache, read_ratio, num_operations=1000, num_keys=50)
         config_results['strategies'].append(result)
-        os.unlink(db_path)
-        
+
         # Write-Through
-        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
-            db_path = f.name
-        cache = WriteThroughCacheStrategy(db_path=db_path)
+        cache = WriteThroughCacheStrategy()
         result = run_test("Write-Through", cache, read_ratio, num_operations=1000, num_keys=50)
         config_results['strategies'].append(result)
-        os.unlink(db_path)
-        
+
         # Write-Back
-        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as f:
-            db_path = f.name
-        cache = WriteBackCacheStrategy(db_path=db_path)
+        cache = WriteBackCacheStrategy()
         result = run_test("Write-Back (Write-Behind)", cache, read_ratio, num_operations=1000, num_keys=50)
         config_results['strategies'].append(result)
-        os.unlink(db_path)
         
         all_results.append(config_results)
     
@@ -139,11 +157,31 @@ def run_all_tests():
 
 def main():
     """Главная функция"""
+    print("\n" + "="*70)
+    print("ЭТАП 0: ОЖИДАНИЕ СЕРВИСОВ (Redis, Postgres)")
+    print("="*70)
+
+    pg_host = os.getenv('POSTGRES_HOST', 'localhost')
+    pg_port = int(os.getenv('POSTGRES_PORT', 5433))
+    redis_host = os.getenv('REDIS_HOST', 'localhost')
+    redis_port = int(os.getenv('REDIS_PORT', 6380))
+
+    print(f"Подключение к: Postgres {pg_host}:{pg_port}, Redis {redis_host}:{redis_port}")
     
+    try:
+        wait_for_tcp(pg_host, pg_port, timeout=30)
+        print(f"✓ Postgres доступен на {pg_host}:{pg_port}")
+        wait_for_tcp(redis_host, redis_port, timeout=30)
+        print(f"✓ Redis доступен на {redis_host}:{redis_port}")
+    except Exception as e:
+        print(f'❌ Ошибка подключения: {e}')
+        print('Убедитесь что контейнеры запущены: docker compose ps')
+        return
+
     print("\n" + "="*70)
     print("ЭТАП 1: ЗАПУСК ТЕСТОВ")
     print("="*70)
-    
+
     # Запускаем все тесты
     results = run_all_tests()
     
