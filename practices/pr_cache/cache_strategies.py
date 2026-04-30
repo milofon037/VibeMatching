@@ -75,6 +75,16 @@ class CacheStrategy(ABC):
     def _init_redis(self):
         self.redis = self.redis_lib.Redis(host=self.redis_host, port=self.redis_port, decode_responses=True)
 
+    def clear_all(self):
+        """Очищает кеш и БД для начистоты тестирования"""
+        # Очищаем Redis
+        self.redis.flushdb()
+        
+        # Очищаем таблицу в PostgreSQL
+        cur = self.pg_conn.cursor()
+        cur.execute('DELETE FROM data')
+        cur.close()
+
     def _db_read(self, key: str) -> Optional[str]:
         self.metrics.db_reads += 1
         cur = self.pg_conn.cursor()

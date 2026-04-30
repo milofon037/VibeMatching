@@ -137,16 +137,19 @@ def run_all_tests():
         
         # Lazy Loading
         cache = LazyLoadingCacheStrategy()
+        cache.clear_all()  # Очищаем перед тестом
         result = run_test("Lazy Loading (Cache-Aside)", cache, read_ratio, num_operations=1000, num_keys=50)
         config_results['strategies'].append(result)
 
         # Write-Through
         cache = WriteThroughCacheStrategy()
+        cache.clear_all()  # Очищаем перед тестом
         result = run_test("Write-Through", cache, read_ratio, num_operations=1000, num_keys=50)
         config_results['strategies'].append(result)
 
         # Write-Back
         cache = WriteBackCacheStrategy()
+        cache.clear_all()  # Очищаем перед тестом
         result = run_test("Write-Back (Write-Behind)", cache, read_ratio, num_operations=1000, num_keys=50)
         config_results['strategies'].append(result)
         
